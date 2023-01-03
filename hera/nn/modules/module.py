@@ -132,14 +132,12 @@ class Module(abc.ABC):
         return out
 
     def eval(self):
-        """Changes the behaviour of the module for evaluation.
-        """
+        """Changes the behaviour of the module for evaluation."""
         if self._training:
             self.training = False
 
     def train(self):
-        """Changes the behaviour of the module for training.
-        """
+        """Changes the behaviour of the module for training."""
         if not self._training:
             self.training = True
 

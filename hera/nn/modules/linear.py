@@ -53,8 +53,7 @@ class Linear(Module):
         return (None, *shape[1:])
 
     def reset_parameters(self):
-        """Resets (re-intiialize or initialize) Linear module weights.
-        """
+        """Resets (re-intiialize or initialize) Linear module weights."""
         self.weight.reset_parameter()
         if self.use_bias:
             self.bias.reset_parameter()

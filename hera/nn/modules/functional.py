@@ -163,7 +163,10 @@ def global_avg_pooling_2d(inputs, weights):
 
 @jax.jit
 def layer_normalization(
-    inputs: ndarray, gamma: ndarray = None, beta: ndarray = None, eps: float = 1e-05
+    inputs: ndarray,
+    gamma: ndarray = None,
+    beta: ndarray = None,
+    eps: float = 1e-05
 ):
     """Applies layer normalization on an input tensor
 
@@ -171,7 +174,8 @@ def layer_normalization(
         inputs (ndarray): Tensor with shape (*, N)
         gamma (ndarray, optional): Tensor with input (N,). Defaults to None.
         beta (ndarray, optional): Tensor with input (N,). Defaults to None.
-        eps (ndarray, optional): Epsilon value that will be added to avoid division by zero. Defaults to 1e-05.
+        eps (ndarray, optional): Epsilon value that will be added
+                                 to avoid division by zero. Defaults to 1e-05.
 
     Returns:
         ndarray: Tensor with shape (*, N)

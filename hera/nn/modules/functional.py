@@ -79,10 +79,8 @@ def dropout(
         # return the same inputs without dropout
         # Also we divide by the rate to scale the weights.
         out = lax.select(
-            training,
-            jnp.where(keep, inputs / keep_prob, 0),
-            inputs
-            )
+            training, jnp.where(keep, inputs / keep_prob, 0), inputs
+        )
         return out
     elif rate == 1.0:
         return jnp.zeros(inputs.shape)
@@ -166,7 +164,7 @@ def layer_normalization(
     inputs: ndarray,
     gamma: ndarray = None,
     beta: ndarray = None,
-    eps: float = 1e-05
+    eps: float = 1e-05,
 ):
     """Applies layer normalization on an input tensor
 

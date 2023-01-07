@@ -1,13 +1,13 @@
+from typing import Callable, Dict, Union
+
 import jax
 from jax import numpy as jnp
 from jax.nn import initializers
-
+from jax.numpy import ndarray
+from jax.random import PRNGKey
 from nn.modules import functional as F
 from nn.modules.module import Module
 from nn.modules.parameter import Parameter
-from typing import Dict, Callable, Union
-from jax.numpy import ndarray
-from jax.random import PRNGKey
 
 
 class Linear(Module):
@@ -53,7 +53,8 @@ class Linear(Module):
         return (None, *shape[1:])
 
     def reset_parameters(self):
-        """Resets (re-intiialize or initialize) Linear module weights."""
+        """Resets (re-intiialize or initialize) Linear module weights.
+        """
         self.weight.reset_parameter()
         if self.use_bias:
             self.bias.reset_parameter()

@@ -35,12 +35,5 @@ class Dropout(Module):
         out = F.dropout(inputs, weights, self.rate, rng, self.training)
         return out
 
-    # def __call__(self, weights, inputs):
-    #     # Add it manually because `__call__` is overridden.
-    #     self.jit_forward()
-    #     # Generate different random key each time we call dropout.
-    #     random_key = self.make_random_key()
-    #     return self.forward(weights=weights, inputs=inputs, rng=random_key)
-
     def __repr__(self):
         return f"{self.__class__.__name__}(rate={self.rate})"

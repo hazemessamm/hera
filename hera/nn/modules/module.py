@@ -10,7 +10,7 @@ class Module(abc.ABC):
     def __init__(
         self,
         rng: Union[int, jax.random.PRNGKey] = None,
-        stochastic_module: bool = False,
+        non_deterministic: bool = False,
         jit: bool = False,
     ):
         """Base Module
@@ -24,7 +24,7 @@ class Module(abc.ABC):
                                                             that this module
                                                             does not need it.
                                                             Defaults to None.
-            stochastic_module (bool, optional): If set to `True` then this
+            non_deterministic (bool, optional): If set to `True` then this
                                                 modules will change the seed
                                                 with every call
                                                 (e.g. Dropout needs it to drop
@@ -45,11 +45,11 @@ class Module(abc.ABC):
                 self.rng = rng
 
         self.nested_modules: List[Module] = []
-        self.stochastic_module = stochastic_module
+        self.non_deterministic = non_deterministic
 
         # (e.g. Dropout requires different key
         # each call to drop different neurons.)
-        if self.stochastic_module:
+        if self.non_deterministic:
             self._initial_rng = self.rng
 
         self.jit = jit
@@ -147,7 +147,7 @@ class Module(abc.ABC):
         Raises:
             ValueError: If the module is not stochastic.
         """
-        if self.stochastic_module:
+        if self.non_deterministic:
             self.rng = self._initial_rng
         else:
             raise ValueError(f"{self} is not a stochastic module.")
@@ -182,7 +182,7 @@ class Module(abc.ABC):
         Returns:
             ndarray: A new key.
         """
-        if self.stochastic_module:
+        if self.non_deterministic:
             rng, another_key = jax.random.split(self.rng, 2)
             if not isinstance(self.rng, jax.core.Tracer):
                 self.rng = rng

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from nn.modules.module import Module
+from hera.nn.modules.module import Module
 
 
 class ModuleList(Module):

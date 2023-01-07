@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from nn.modules.module import Module
+from hera.nn.modules.module import Module
 
 
 class Sequential(Module):
@@ -8,7 +8,8 @@ class Sequential(Module):
         super().__init__(jit=jit)
         if not isinstance(modules, list):
             raise ValueError(
-                f"`modules` should be a `list` of moudules. Recieved type: {type(modules)}"
+                "`modules` should be a `list` of moudules. "
+                f"Recieved type: {type(modules)}"
             )
         self.nested_modules = modules
 

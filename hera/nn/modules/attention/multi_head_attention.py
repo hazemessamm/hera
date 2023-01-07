@@ -31,14 +31,14 @@ class MultiHeadAttention(Module):
                                               tokens or not. Defaults to False.
             use_bias (bool, optional): Whether to use the bias in the linear
                                        modules or not. Defaults to True.
-            jit (bool, optional): Whether to JIT compile the forward
-                                  method or not. Defaults to False.
+            jit (bool, optional): JIT compiles `forward()` if enabled.
+                                  Defaults to False.
 
         Raises:
             ValueError: If the embedding dimension is not divisble by
                         the number of heads.
         """
-        super().__init__(rng)
+        super().__init__(rng=rng, jit=jit)
 
         # `use_causal_mask` is
         # inspired from

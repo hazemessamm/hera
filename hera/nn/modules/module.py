@@ -193,10 +193,8 @@ class Module(abc.ABC):
     def __setattr__(self, __name: str, __value: Any) -> None:
         if isinstance(__value, (Module, Parameter)):
             if not hasattr(self, "nested_modules"):
-                msg = """super().__init__() is not called.
-                         Please add it in your subclass `__init__`
-                      """
-                raise Exception(msg)
+                raise Exception("super().__init__() is not called. "
+                                "Please add it in your subclass `__init__`")
             self.nested_modules.append(__value)
             __value._name = __name
 
@@ -206,7 +204,7 @@ class Module(abc.ABC):
         raise NotImplementedError
 
     # TODO: save each gradient to its corresponding layer.
-    def save_gradients(self, gradients):
+    def accumulate_gradients(self, gradients):
         pass
 
     def jit_forward(self):

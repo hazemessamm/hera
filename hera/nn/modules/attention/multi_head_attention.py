@@ -40,10 +40,6 @@ class MultiHeadAttention(Module):
         """
         super().__init__(rng=rng, jit=jit)
 
-        # `use_causal_mask` is
-        # inspired from
-        # https://www.tensorflow.org/api_docs/python/tf/keras/modules/MultiHeadAttention
-
         if embed_dim % num_heads == 0:
             raise ValueError("embed_dim should be divisble by num_heads")
 

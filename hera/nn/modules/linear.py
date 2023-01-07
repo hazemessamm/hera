@@ -70,6 +70,7 @@ class Linear(Module):
             ndarray: A linearly transformed input
                      with axis order: (*, output_dim).
         """
+
         weight = weights["weight"]
         if self.use_bias:
             bias = weights["bias"]

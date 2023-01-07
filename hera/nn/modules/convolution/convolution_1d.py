@@ -1,12 +1,12 @@
-from typing import Callable, Tuple, Union, List
+from typing import Callable, Dict, List, Tuple, Union
 
 from jax import lax
 from jax.nn import initializers
 from jax.numpy import ndarray
-from typing import Dict
-from hera.nn.modules.parameter import Parameter
-from hera.nn.modules.module import Module
+
 from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
+from hera.nn.modules.parameter import Parameter
 
 
 class Conv1D(Module):
@@ -89,17 +89,16 @@ class Conv1D(Module):
 
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 3:
-            msg = f"""`input_shape` should be a tuple
-                    with len(input_shape) == 4.
-                    Recieved {input_shape}"""
-            raise ValueError(msg)
+            raise ValueError("`input_shape` should be a tuple "
+                             "with len(input_shape) == 4. "
+                             f"Recieved {input_shape}")
 
         return lax.conv_general_shape_tuple(
             lhs_shape=input_shape,
             rhs_shape=self.weight.shape,
             window_strides=self.strides,
             padding=self.padding,
-            dimension_numbers=self.dimension_numbers,
+            dimension_numbers=self._dimensions_spec,
         )
 
     def forward(self, weights: Dict, inputs: ndarray):

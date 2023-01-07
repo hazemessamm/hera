@@ -17,7 +17,7 @@ class LayerNormalization(Module):
         center: bool = True,
         eps: float = 1e-05,
     ):
-        """Layer normalization module
+        """Layer Normalization Module
 
         Args:
             normalized_shape (int): Number of features to be normalized.

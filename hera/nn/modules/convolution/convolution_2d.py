@@ -1,12 +1,12 @@
-from typing import Callable, Tuple, Union, List
+from typing import Callable, Dict, List, Tuple, Union
 
 from jax import lax
-from jax.numpy import DeviceArray
-from nn.modules.module import Module
-from nn.modules.parameter import Parameter
 from jax.nn import initializers
-from nn.modules import functional as F
-from typing import Dict
+from jax.numpy import DeviceArray
+
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
+from hera.nn.modules.parameter import Parameter
 
 
 class Conv2D(Module):
@@ -50,57 +50,57 @@ class Conv2D(Module):
         self.activation = activation
         self.use_bias = use_bias
 
-        self._dimensions_spec = ("NHC", "HIO", "NHC")
+        self._dimensions_spec = ("NHWC", "HWIO", "NHWC")
 
         self._validate_init()
 
         k1, k2 = self.create_keys(2)
-        kernel_shape = (*self.kernel_size, in_channels, self.filters)
+
+        kernel_shape = (*self.kernel_size, in_channels, out_channels)
         self.weight = Parameter(k1, initializers.glorot_uniform, kernel_shape)
 
         if self.use_bias:
-            bias_shape = (self.filters,)
+            bias_shape = (self.out_channels,)
             self.bias = Parameter(k2, initializers.zeros, bias_shape)
 
-        self._dn = lax.conv_dimension_numbers(
-            (1, 1, in_channels), kernel_shape, self.dimensions_spec
-        )
+        # self._dn = lax.conv_dimension_numbers(
+        #     (1, 1, 1, in_channels), kernel_shape, self._dimensions_spec
+        # )
 
     def _validate_init(self):
         if isinstance(self.kernel_size, tuple):
             if 0 >= len(self.kernel_size) > 2:
-                msg = """`kernel_size` should be a tuple with
-                          two elements or an integer"""
-                raise ValueError(msg)
+                raise ValueError("`kernel_size` should be a tuple with two "
+                                 "elements or an integer")
         elif isinstance(self.kernel_size, int):
             self.kernel_size = (self.kernel_size, self.kernel_size)
 
         if isinstance(self.strides, tuple):
             if 0 >= len(self.strides) > 2:
-                msg = """`strides` should be a tuple with two elements
-                          or an integer"""
-                raise ValueError(msg)
+                raise ValueError("`strides` should be a tuple with "
+                                 "two elements or an integer")
         elif isinstance(self.strides, int):
             self.strides = (self.strides, self.strides)
 
         if self.padding == "causal":
             raise ValueError(
-                f"""`causal` padding is only allowed in
-                    `Conv1D` module. Recieved padding={self.padding}"""
+                "`causal` padding is only allowed in "
+                f"`Conv1D` module. Recieved padding={self.padding}"
             )
 
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 4:
             raise ValueError(
-                f"""`input_shape` should be a tuple
-                    with len(input_shape) == 4. Recieved {input_shape}"""
+                f"`input_shape` should be a tuple with len(input_shape) == 4."
+                f"Recieved {input_shape}"
             )
+
         return lax.conv_general_shape_tuple(
             lhs_shape=input_shape,
             rhs_shape=self.weight.shape,
             window_strides=self.strides,
             padding=self.padding,
-            dimension_numbers=self.dimension_numbers,
+            dimension_numbers=self._dimensions_spec,
         )
 
     def forward(self, weights: Dict, inputs: DeviceArray):

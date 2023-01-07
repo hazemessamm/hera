@@ -64,7 +64,7 @@ def dropout(
                                    will be applied. Defaults to True.
 
     Returns:
-        ndarray: The same input tensor with randomly dropped out elements.
+        ndarray: Tensor with randomly dropped out elements.
     """
     # Check if the rate is higher than 0.0 to avoid NaNs when dividing.
     if 1.0 > rate > 0.0:
@@ -97,10 +97,25 @@ def flatten(inputs: ndarray, weights: ndarray):
         weights (ndarray): An empty tuple.
 
     Returns:
-        ndarray: A flattened tensor.
+        ndarray: Flattened tensor.
     """
-    batch_dim = inputs.shape
+    batch_dim = inputs.shape[0]
     return jnp.reshape(inputs, (batch_dim, -1))
+
+
+@jax.jit
+def permute(inputs: ndarray, weights: ndarray, permute_to: Tuple):
+    """Permutes the inputs.
+
+    Args:
+        inputs (ndarray): An input tensor with shape (*).
+        weights (ndarray): An empty tuple.
+        permute_to (Tuple): Target axis order.
+
+    Returns:
+        ndarray: Permuted tensor.
+    """
+    return jnp.transpose(inputs, permute_to)
 
 
 @jax.jit

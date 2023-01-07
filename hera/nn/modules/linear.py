@@ -5,9 +5,9 @@ from jax import numpy as jnp
 from jax.nn import initializers
 from jax.numpy import ndarray
 from jax.random import PRNGKey
-from nn.modules import functional as F
-from nn.modules.module import Module
-from nn.modules.parameter import Parameter
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
+from hera.nn.modules.parameter import Parameter
 
 
 class Linear(Module):
@@ -53,8 +53,7 @@ class Linear(Module):
         return (None, *shape[1:])
 
     def reset_parameters(self):
-        """Resets (re-intiialize or initialize) Linear module weights.
-        """
+        """Resets (re-intiialize or initialize) Linear module weights."""
         self.weight.reset_parameter()
         if self.use_bias:
             self.bias.reset_parameter()
@@ -65,10 +64,11 @@ class Linear(Module):
         Args:
             weights (Dict): A dictionary containing the weights
                             with `weights` and `bias` as keys.
-            inputs (ndarray): A tensor with shape (*, input_dim)
+            inputs (ndarray): A tensor with axis order: (*, input_dim)
 
         Returns:
-            ndarray: A linearly transformed input with shape (*, output_dim).
+            ndarray: A linearly transformed input
+                     with axis order: (*, output_dim).
         """
         weight = weights["weight"]
         if self.use_bias:

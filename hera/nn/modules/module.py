@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import Any, List, Tuple, Union
 
 import jax
-from nn.modules.parameter import Parameter
+from hera.nn.modules.parameter import Parameter
 
 
 class Module(abc.ABC):
@@ -230,18 +230,13 @@ class Module(abc.ABC):
 
         return self.forward(weights, *args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, weights, *args, **kwargs):
         """Calls the pre_forward (if implemented) and the forward function.
 
         Returns:
             ndarray: An output tensor.
         """
         self.jit_forward()
-
-        if self._has_weights:
-            weights, *args = args
-            out = self._forward_with_weights(weights, *args, **kwargs)
-        else:
-            out = self.forward(*args, **kwargs)
+        out = self.forward(weights, *args, **kwargs)
 
         return out

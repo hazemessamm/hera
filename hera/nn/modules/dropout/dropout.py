@@ -1,7 +1,7 @@
 import jax
 
-from nn.modules import functional as F
-from nn.modules.module import Module
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
 from jax import numpy as jnp
 
 

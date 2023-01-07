@@ -1,8 +1,8 @@
 import jax
 from jax.nn import initializers
-from nn.modules import functional as F
-from nn.modules.module import Module
-from nn.modules.parameter import Parameter
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
+from hera.nn.modules.parameter import Parameter
 from jax.numpy import ndarray
 from typing import Dict
 from jax import numpy as jnp

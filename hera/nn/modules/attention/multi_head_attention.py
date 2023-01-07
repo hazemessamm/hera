@@ -1,10 +1,10 @@
 import jax
 from jax import numpy as jnp
 
-from nn.modules import functional as F
-from nn.modules.linear import Linear
-from nn.modules.dropout.dropout import Dropout
-from nn.modules.module import Module
+from hera.nn.modules import functional as F
+from hera.nn.modules.linear import Linear
+from hera.nn.modules.dropout.dropout import Dropout
+from hera.nn.modules.module import Module
 from typing import Dict
 from jax.numpy import ndarray
 

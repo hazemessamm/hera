@@ -1,8 +1,8 @@
 import jax
+from jax import numpy as jnp
 
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from jax import numpy as jnp
 
 
 class Dropout(Module):

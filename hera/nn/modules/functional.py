@@ -1,10 +1,10 @@
 from functools import partial
+from typing import Optional, Tuple, Union
 
 import jax
-from jax import numpy as jnp
 from jax import lax
+from jax import numpy as jnp
 from jax.numpy import ndarray
-from typing import Optional, Tuple, Union
 
 
 @jax.jit

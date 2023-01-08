@@ -6,3 +6,5 @@ from .linear import Linear
 from .attention.multi_head_attention import MultiHeadAttention
 from .dropout.dropout import Dropout
 from .normalization.layer_normalization import LayerNormalization
+from .sequential import Sequential
+from .module_list import ModuleList

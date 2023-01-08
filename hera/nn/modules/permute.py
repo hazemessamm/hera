@@ -1,9 +1,10 @@
-import jax
-
-import jax.numpy as jnp
-from nn.modules import functional as F
-from nn.modules.module import Module
 from typing import Tuple
+
+import jax
+import jax.numpy as jnp
+
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
 
 
 class Permute(Module):

@@ -1,8 +1,7 @@
 import jax
-
 import jax.numpy as jnp
-from nn.modules import functional as F
-from nn.modules.module import Module
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
 
 
 class Flatten(Module):

@@ -5,6 +5,7 @@ from jax import numpy as jnp
 from jax.nn import initializers
 from jax.numpy import ndarray
 from jax.random import PRNGKey
+
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 from hera.nn.modules.parameter import Parameter

@@ -1,12 +1,12 @@
-import jax
-from jax.nn import initializers
+from typing import Dict
 
+import jax
+import jax.numpy as jnp
+from jax.nn import initializers
+from jax.numpy import ndarray
 from nn.modules import functional as F
 from nn.modules.module import Module
 from nn.modules.parameter import Parameter
-import jax.numpy as jnp
-from typing import Dict
-from jax.numpy import ndarray
 
 
 class Embedding(Module):

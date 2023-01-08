@@ -1,12 +1,13 @@
+from typing import Dict
+
 import jax
 from jax import numpy as jnp
+from jax.numpy import ndarray
 
 from hera.nn.modules import functional as F
-from hera.nn.modules.linear import Linear
 from hera.nn.modules.dropout.dropout import Dropout
+from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
-from typing import Dict
-from jax.numpy import ndarray
 
 
 class MultiHeadAttention(Module):

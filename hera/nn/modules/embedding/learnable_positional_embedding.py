@@ -1,7 +1,8 @@
+from typing import Dict
+
+from jax.numpy import ndarray
 from nn.modules import functional as F
 from nn.modules.embedding.embedding import Embedding
-from typing import Dict
-from jax.numpy import ndarray
 
 
 class PositionalEmbedding(Embedding):

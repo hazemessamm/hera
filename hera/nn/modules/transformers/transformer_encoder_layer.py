@@ -7,29 +7,42 @@ from hera.nn.modules.attention.multi_head_attention import MultiHeadAttention
 from hera.nn.modules.dropout.dropout import Dropout
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
-from hera.nn.modules.normalization.layer_normalization import \
-    LayerNormalization
+from hera.nn.modules.normalization.layer_normalization import LayerNormalization
 from hera.nn.modules.sequential import Sequential
+from typing import Callable
 
 
 class TransformerEncoderLayer(Module):
-    """_summary_
-
-    Args:
-        Module (_type_): _description_
-    """
-
     def __init__(
         self,
-        embed_dim,
-        num_heads,
-        rng,
-        intermediate_dim=512,
-        attn_dropout=0.1,
-        ff_dropout=0.1,
-        ff_activation=jax.nn.gelu,
-        jit=False,
+        embedding_dim: int,
+        num_heads: int,
+        rng: int,
+        intermediate_dim: int = 512,
+        attn_dropout: int = 0.1,
+        ff_dropout: int = 0.1,
+        ff_activation: Callable = jax.nn.gelu,
+        jit: bool = False,
     ):
+        """Transformer Encoder Layer Module.
+
+        Args:
+            embedding_dim (int): Embedding dimension.
+            num_heads (int): Number of heads,
+                             must be divisible by the embedding_dim.
+            rng (int): Seed for creating weights.
+            intermediate_dim (int, optional): Intermediate dimension size for
+                                              the feedforward module.
+                                              Defaults to 512.
+            attn_dropout (int, optional): Attention dropout rate.
+                                          Defaults to 0.1.
+            ff_dropout (int, optional): Feedforward dropout rate.
+                                        Defaults to 0.1.
+            ff_activation (Callable, optional): Feedforward activation function.
+                                                Defaults to jax.nn.gelu.
+            jit (bool, optional): Enables JIT compilation for
+                                  the nested modules. Defaults to False.
+        """
         super().__init__(rng, jit=jit)
         (
             mha_key,
@@ -39,29 +52,34 @@ class TransformerEncoderLayer(Module):
             layernorm_2_key,
             ff_dropout_key,
         ) = self.create_keys(6)
+
         self.mha = MultiHeadAttention(
-            embed_dim,
+            embedding_dim,
             num_heads,
             rng=mha_key,
             dropout=attn_dropout,
             use_causal_mask=False,
         )
-        self.layernorm_1 = LayerNormalization(embed_dim, rng=layernorm_1_key)
+        self.layernorm_1 = LayerNormalization(
+            embedding_dim, rng=layernorm_1_key
+        )
 
         self.ff = Sequential(
             [
                 Linear(
-                    embed_dim,
+                    embedding_dim,
                     intermediate_dim,
                     rng=ff_key_1,
                     activation=ff_activation,
                 ),
                 Dropout(ff_dropout, rng=ff_dropout_key),
-                Linear(intermediate_dim, embed_dim, rng=ff_key_2),
+                Linear(intermediate_dim, embedding_dim, rng=ff_key_2),
             ],
             jit=jit,
         )
-        self.layernorm_2 = LayerNormalization(embed_dim, rng=layernorm_2_key)
+        self.layernorm_2 = LayerNormalization(
+            embedding_dim, rng=layernorm_2_key
+        )
 
     def compute_output_shape(self, input_shape):
         inputs = jax.core.ShapedArray(
@@ -76,7 +94,7 @@ class TransformerEncoderLayer(Module):
         Args:
             weights (Dict): Dictionary with attribute names as keys
                             and weights as values.
-            inputs (_type_): 3D tensor with axis order:
+            inputs (ndarray): 3D tensor with axis order:
                              (batch_size, timesteps, embedding_dim).
 
         Returns:

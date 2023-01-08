@@ -22,6 +22,10 @@ class Module(abc.ABC):
 
         self.nested_modules: List[Module] = []
         self.non_deterministic = non_deterministic
+        
+        # TODO: if a module already has a function
+        # that is JIT compiled then no need to re-JIT compile the forward.
+        self.requires_jit_compilation = False
 
         # (e.g. Dropout requires different key
         # each call to drop different neurons.)
@@ -130,9 +134,14 @@ class Module(abc.ABC):
 
     def jit_forward(self):
         if self.jit and not self._jitted:
-            for mod in filter(
-                lambda x: isinstance(x, Module), self.nested_modules
-            ):
+            if len(self.nested_modules) > 0:
+                for mod in filter(lambda x: isinstance(x, Module),
+                                  self.nested_modules):
+                    if any(isinstance(i, Module) for i in mod.nested_modules):
+                        mod.jit_forward()
+                    else:
+                        mod.forward = jax.jit(mod.forward)
+            else:
                 mod.forward = jax.jit(mod.forward)
             self._jitted = True
 

@@ -8,3 +8,4 @@ from .modules import Conv2D
 from .modules import Module
 from .modules import Parameter
 from .modules import Sequential
+from .modules import Embedding

@@ -11,7 +11,7 @@ class Module(abc.ABC):
     def __init__(
         self,
         rng: Union[int, jax.random.PRNGKey] = None,
-        stochastic_module: bool = False,
+        non_deterministic: bool = False,
         jit: bool = False,
     ):
         if rng is not None:
@@ -21,11 +21,11 @@ class Module(abc.ABC):
                 self.rng = rng
 
         self.nested_modules: List[Module] = []
-        self.stochastic_module = stochastic_module
+        self.non_deterministic = non_deterministic
 
         # (e.g. Dropout requires different key
         # each call to drop different neurons.)
-        if self.stochastic_module:
+        if self.non_deterministic:
             self._initial_rng = self.rng
 
         self.jit = jit
@@ -90,10 +90,10 @@ class Module(abc.ABC):
             self.training = True
 
     def reset_rng(self):
-        if self.stochastic_module:
+        if self.non_deterministic:
             self.rng = self._initial_rng
         else:
-            raise ValueError(f"{self} is not a stochastic module.")
+            raise ValueError(f"{self} is not a non-deterministic module.")
 
     def compute_output_shape(self, input_shape):
         return input_shape
@@ -103,7 +103,7 @@ class Module(abc.ABC):
 
     def make_random_key(self):
         with jax.core.eval_context():
-            if self.stochastic_module:
+            if self.non_deterministic:
                 self.rng, subkey = jax.random.split(self.rng, 2)
                 return subkey
             else:

@@ -3,7 +3,7 @@ Deep Learning library bulit on top of JAX and inspired from PyTorch
 
 
 
-# Example 1:
+### Example 1:
 ```python
 from hera import nn
 
@@ -109,4 +109,19 @@ class MnistModel(nn.Module):
             ids = np.random.randint(0, test_data.shape[0], (batch_size,))
             batch_data = train_data[ids, :]
             out = model(model.parameters(), batch_data).argmax(-1)
+```
+
+### Sequential Model Example:
+```python
+model = nn.Sequential([
+    nn.Conv2D(1, 32, 3, 3, activation=jax.nn.relu),
+    nn.Dropout(0.2, 5),
+    nn.Conv2D(32, 32, 3, 4, activation=jax.nn.relu),
+    nn.Dropout(0.2, 5),
+    nn.Conv2D(32, 32, 3, 4, activation=jax.nn.relu),
+    nn.Dropout(0.2, 5),
+    nn.Flatten(),
+    nn.Linear(15488, 128, 6),
+    nn.Linear(128, 10, 7)
+])
 ```

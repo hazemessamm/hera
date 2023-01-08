@@ -1,4 +1,4 @@
-from nn.modules.module import Module
+from hera.nn.modules.module import Module
 import optax
 from jax.numpy import ndarray
 from jax import numpy as jnp
@@ -14,15 +14,21 @@ class Loss:
         self.set_reduction(reduction=reduction)
 
     def set_reduction(self, reduction):
-        if reduction == 'mean':
+        if reduction == "mean":
             self.reduction_function = jnp.mean
-        elif reduction == 'sum':
+        elif reduction == "sum":
             self.reduction_function = jnp.sum
         else:
             self.reduction_function = lambda x: x
 
     def reduce_loss(self, loss):
         return self.reduction_function(loss)
+
+    def forward(self, y_pred, y_true):
+        raise NotImplementedError
+
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
 
 
 # TODO
@@ -32,7 +38,7 @@ class BCELoss(Loss):
 
 
 class BCELossWithLogits(Loss):
-    def __init__(self, reduction: str = 'mean', jit: bool = False):
+    def __init__(self, reduction: str = "mean", jit: bool = False):
         super().__init__(reduction, jit)
 
     def forward(self, y_pred, y_true):
@@ -40,8 +46,23 @@ class BCELossWithLogits(Loss):
         return self.reduction_function(loss)
 
 
+class SparseCrossEntropyLoss(Loss):
+    def __init__(self, reduction: str = "mean", jit: bool = False):
+        super().__init__(reduction, jit)
+
+    def _apply_sparse_cross_entropy_loss(
+        self, y_pred: ndarray, y_true: ndarray
+    ):
+        loss = optax.softmax_cross_entropy_with_integer_labels(y_pred, y_true)
+        return loss
+
+    def forward(self, y_pred: ndarray, y_true: ndarray):
+        loss = self._apply_sparse_cross_entropy_loss(y_pred, y_true)
+        return self.reduce_loss(loss)
+
+
 class CrossEntropyLoss(Loss):
-    def __init__(self, reduction: str = 'mean', jit: bool = False):
+    def __init__(self, reduction: str = "mean", jit: bool = False):
         super().__init__(reduction, jit)
 
     def _apply_cross_entropy_loss(self, y_pred: ndarray, y_true: ndarray):
@@ -60,11 +81,11 @@ class NLLLoss(Module):
 
 
 class MSELoss(Loss):
-    def __init__(self, reduction: str = 'mean', jit: bool = False):
+    def __init__(self, reduction: str = "mean", jit: bool = False):
         super().__init__(reduction, jit)
 
     def _apply_mse(self, y_pred, y_true):
-        return (y_true - y_pred)**2
+        return (y_true - y_pred) ** 2
 
     def forward(self, y_pred, y_true):
         loss = self._apply_mse(y_pred, y_true)

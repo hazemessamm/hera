@@ -10,3 +10,5 @@ from .sequential import Sequential
 from .module_list import ModuleList
 from .embedding.embedding import Embedding
 from .flatten import Flatten
+from .losses import CrossEntropyLoss
+from .losses import SparseCrossEntropyLoss

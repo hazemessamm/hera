@@ -21,8 +21,7 @@ class Module(abc.ABC):
                 self.rng = rng
 
         self.nested_modules: List[Module] = []
-        self.non_deterministic = non_deterministic
-        
+        self.non_deterministic = non_deterministic        
         # TODO: if a module already has a function
         # that is JIT compiled then no need to re-JIT compile the forward.
         self.requires_jit_compilation = False

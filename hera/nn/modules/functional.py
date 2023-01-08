@@ -301,7 +301,7 @@ def conv2d(inputs, weights, bias=None, strides=(1, 1), padding="valid"):
     """
     dims_spec = ("NHWC", "HWIO", "NHWC")
     dimension_numbers = lax.conv_dimension_numbers(
-        (1, 1, 1, inputs.shape[-1]), weights.shape, dims_spec
+        inputs.shape, weights.shape, dims_spec
     )
 
     out = lax.conv_general_dilated(

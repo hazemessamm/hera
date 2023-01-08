@@ -9,3 +9,4 @@ from .modules import Module
 from .modules import Parameter
 from .modules import Sequential
 from .modules import Embedding
+from .modules import Flatten

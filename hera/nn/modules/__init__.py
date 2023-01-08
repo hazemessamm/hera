@@ -9,3 +9,4 @@ from .normalization.layer_normalization import LayerNormalization
 from .sequential import Sequential
 from .module_list import ModuleList
 from .embedding.embedding import Embedding
+from .flatten import Flatten

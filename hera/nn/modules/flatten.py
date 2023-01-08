@@ -5,13 +5,13 @@ from hera.nn.modules.module import Module
 
 
 class Flatten(Module):
-    def __init__(self, jit=False):
+    def __init__(self):
         """Flatten Module.
 
         Args:
             jit (bool, optional): _description_. Defaults to False.
         """
-        super().__init__(jit=jit)
+        super().__init__()
 
     def compute_output_shape(self, input_shape):
         inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
@@ -29,4 +29,4 @@ class Flatten(Module):
         Returns:
             ndarray: Flattened Tensor
         """
-        return F.flatten(weights, inputs)
+        return F.flatten(inputs, weights)

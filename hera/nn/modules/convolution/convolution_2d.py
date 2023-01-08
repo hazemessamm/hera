@@ -57,7 +57,7 @@ class Conv2D(Module):
         k1, k2 = self.create_keys(2)
 
         kernel_shape = (*self.kernel_size, in_channels, out_channels)
-        self.weight = Parameter(k1, initializers.glorot_uniform, kernel_shape)
+        self.weight = Parameter(k1, initializers.glorot_uniform(), kernel_shape)
 
         if self.use_bias:
             bias_shape = (self.out_channels,)
@@ -66,6 +66,13 @@ class Conv2D(Module):
         # self._dn = lax.conv_dimension_numbers(
         #     (1, 1, 1, in_channels), kernel_shape, self._dimensions_spec
         # )
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.weight.reset_parameter()
+        if self.use_bias:
+            self.bias.reset_parameter()
 
     def _validate_init(self):
         if isinstance(self.kernel_size, tuple):

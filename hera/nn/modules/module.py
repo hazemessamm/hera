@@ -32,7 +32,7 @@ class Module(abc.ABC):
             self._initial_rng = self.rng
 
         self.jit = jit
-        self._jitted = False
+        self._jit_compiled = False
         self.trainable = True
         self._training = True
         self._name = None
@@ -132,7 +132,7 @@ class Module(abc.ABC):
         pass
 
     def jit_forward(self):
-        if self.jit and not self._jitted:
+        if self.jit and not self._jit_compiled:
             if len(self.nested_modules) > 0:
                 for mod in filter(lambda x: isinstance(x, Module),
                                   self.nested_modules):
@@ -142,7 +142,7 @@ class Module(abc.ABC):
                         mod.forward = jax.jit(mod.forward)
             else:
                 mod.forward = jax.jit(mod.forward)
-            self._jitted = True
+            self._jit_compiled = True
 
     def forward(self, *args, **kwargs):
         raise NotImplementedError

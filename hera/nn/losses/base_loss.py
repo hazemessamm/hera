@@ -2,6 +2,7 @@ from jax import numpy as jnp
 import jax
 import abc
 
+
 class Loss(abc.ABC):
     def __init__(self, reduction: str = None, jit: bool = False):
         self.reduction = reduction

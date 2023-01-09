@@ -7,9 +7,6 @@ from hera.nn.modules.module import Module
 class Flatten(Module):
     def __init__(self):
         """Flatten Module.
-
-        Args:
-            jit (bool, optional): _description_. Defaults to False.
         """
         super().__init__()
 

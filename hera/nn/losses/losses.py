@@ -1,8 +1,9 @@
-from hera.nn.modules.module import Module
+import jax.numpy as jnp
 import optax
 from jax.numpy import ndarray
+
 from hera.nn.losses.base_loss import Loss
-import jax.numpy as jnp
+from hera.nn.modules.module import Module
 
 
 # TODO

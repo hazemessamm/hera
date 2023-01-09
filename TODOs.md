@@ -1,7 +1,4 @@
-
-
-
-### Modules to add.
+### Modules to be added.
 
 - [ ] Average Pooling
 - [ ] Max Pooling
@@ -29,6 +26,7 @@
 - [ ] RMSprop Optimizer
 - [ ] SGD Optimizer
 - [ ] Adagrad Optimizer
+- [ ] Module Dict
 
 You are welcome to contribute by adding any of these missing modules or
 if there is another module that you want to add you can submit a pull request or an issue.

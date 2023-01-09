@@ -1,6 +1,7 @@
-from jax import numpy as jnp
-import jax
 import abc
+
+import jax
+from jax import numpy as jnp
 
 
 class Loss(abc.ABC):

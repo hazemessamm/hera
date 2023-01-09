@@ -1,23 +1,25 @@
 from contextlib import contextmanager
-import optax
-import jax
-from hera.nn import Module, Loss
 from functools import partial
 from typing import Tuple, Union
-from jax.numpy import ndarray
-from hera.nn.optimizers import Optimizer
 
+import jax
+import optax
+from jax.numpy import ndarray
+
+from hera.nn import Loss, Module
+from hera.nn.optimizers import Optimizer
 
 apply_updates = jax.jit(optax.apply_updates)
 
 
 @contextmanager
 def eval_mode(model):
+    current_state = model.training
     try:
         model.training = False
         yield
     finally:
-        model.training = True
+        model.training = current_state
 
 
 class BackwardRecorder:

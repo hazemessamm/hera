@@ -12,4 +12,4 @@ from .modules import Embedding
 from .modules import Flatten
 from .losses import CrossEntropyLoss
 from .losses import SparseCrossEntropyLoss
-
+from .losses import Loss

@@ -105,7 +105,15 @@ class MnistModel(nn.Module):
                 
                 # Pass the new weights to the model.
                 model.update_parameters(new_weights=new_weights)
-                    t.set_description(f'Loss: {round(loss, 4)}')
+                
+                t.set_description(f'Loss: {round(loss, 4)}')
+
+                # Instead of writing your backward function like what we defined above (`backward()`)
+                # and calling it with the optimizer and updating the optimizer and the model
+                # You can do that with 2 lines instead:
+                with hera.BackwardRecorder(model, loss_fn, optimizer) as recorder:
+                    loss, predictions, grads = recorder(batch_data, targets=batch_labels)
+                    recorder.apply_updates(grads, params)
 
         # Instead of model.eval() and model.train() (They are available.) 
         # we use `eval_mode` context manager which lets the model enters 

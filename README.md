@@ -5,6 +5,7 @@ Deep Learning library bulit on top of JAX and inspired from PyTorch
 
 ### Example 1:
 ```python
+import hera
 from hera import nn
 
 # Implement the model like PyTorch.
@@ -22,6 +23,11 @@ class MnistModel(nn.Module):
 
         self.flatten = nn.Flatten()
 
+        # If you do NOT know what is the
+        # output shape that should be passed to
+        # the next layer there is a method
+        # `compute_output_shape` that 
+        # calculates the output shape for you.
         output_shape = self.flatten.compute_output_shape(
             self.conv_3.compute_output_shape(
                 self.conv_2.compute_output_shape(

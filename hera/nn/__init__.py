@@ -10,6 +10,6 @@ from .modules import Parameter
 from .modules import Sequential
 from .modules import Embedding
 from .modules import Flatten
-from .modules import CrossEntropyLoss
-from .modules import SparseCrossEntropyLoss
+from .losses import CrossEntropyLoss
+from .losses import SparseCrossEntropyLoss
 

@@ -108,15 +108,19 @@ class MnistModel(nn.Module):
                 
                 t.set_description(f'Loss: {round(loss, 4)}')
 
-                # Instead of writing your backward function like what we defined above (`backward()`)
-                # and calling it with the optimizer and updating the optimizer and the model
+                # Instead of writing your backward function
+                # like what we defined above (`backward()`)
+                # and calling it with the optimizer
+                # and updating the optimizer and the model
                 # You can do that with 2 lines instead:
                 with hera.BackwardRecorder(model, loss_fn, optimizer) as recorder:
                     loss, predictions, grads = recorder(batch_data, targets=batch_labels)
                     recorder.apply_updates(grads, params)
 
-        # Instead of model.eval() and model.train() (They are available.) 
-        # we use `eval_mode` context manager which lets the model enters 
+        # Instead of model.eval()
+        # and model.train() (They are available.) 
+        # we use `eval_mode` context manager
+        # which lets the model enters 
         # evaluation mode then automatically
         # returns to training mode after exiting from it.
         with hera.eval_mode(model):
@@ -138,4 +142,28 @@ model = nn.Sequential([
     nn.Linear(15488, 128, 6),
     nn.Linear(128, 10, 7)
 ])
+
+# But what if you want to calculate the output shape after flatten module?
+# You can do the following:
+
+sequential_model = nn.Sequential([
+    nn.Conv2D(1, 32, 3, 3, activation=jax.nn.relu),
+    nn.Dropout(0.2, 4),
+    nn.Conv2D(32, 32, 3, 5, activation=jax.nn.relu),
+    nn.Dropout(0.2, 6),
+    nn.Conv2D(32, 32, 3, 7, activation=jax.nn.relu),
+    nn.Dropout(0.2, 8),
+    nn.Flatten()
+])
+
+# Calcuate the output shape
+out_shape = sequential_model.compute_output_shape((1, 28, 28, 1))
+
+# Then add the last two layers using the `.add()` method.
+sequential_model.add(nn.Linear(out_shape[-1], 128, 9, activation=jax.nn.relu))
+sequential_model.add(nn.Linear(128, 10, 10))
+
+# You can also do the same using:
+sequential_model.add_modules([nn.Linear(out_shape[-1], 128, 9, activation=jax.nn.relu), nn.Linear(128, 10, 10)])
+
 ```

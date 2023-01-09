@@ -24,10 +24,23 @@ class Sequential(Module):
         for idx, mod in enumerate(self.nested_modules):
             mod._name = str(idx)
 
+    def add_modules(self, modules):
+        if not isinstance(modules, list):
+            raise ValueError("Expected `modules` to be a list. "
+                             f"Recieved: {type(modules)}.")
+        if any(not isinstance(mod, Module) for mod in modules):
+            types_in_list = [type(mod) for mod in modules]
+            raise ValueError("Expected the list to have modules of type "
+                             f"`Module`. Recieved: {types_in_list}.")
+        else:
+            for idx, mod in enumerate(modules, start=len(self.nested_modules)):
+                mod._name = str(idx)
+                self.nested_modules.append(mod)
+
     def add(self, module):
         if not isinstance(module, Module):
-            raise ValueError('Expected module with type `Module`. '
-                             f'Recieved {type(module)}')
+            raise ValueError("Expected module with type `Module`. "
+                             f"Recieved {type(module)}")
         module._name = len(self.nested_modules)
         self.nested_modules.append(module)
 

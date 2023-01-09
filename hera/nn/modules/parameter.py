@@ -1,3 +1,4 @@
+
 class Parameter:
     def __init__(self, rng, initializer, shape):
         self.data = None

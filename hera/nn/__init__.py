@@ -12,5 +12,4 @@ from .modules import Embedding
 from .modules import Flatten
 from .modules import CrossEntropyLoss
 from .modules import SparseCrossEntropyLoss
-from .training import apply_updates
-from .training import eval_mode
+

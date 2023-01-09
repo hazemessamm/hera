@@ -110,9 +110,16 @@ class MnistModel(nn.Module):
 
                 # Instead of writing your backward function
                 # like what we defined above (`backward()`)
-                # and calling it with the optimizer
+                # and calling it 
+                # then we call our optimizer
                 # and updating the optimizer and the model
                 # You can do that with 2 lines instead:
+                # This context manager returns applies forward
+                # and backward propagation and returns to
+                # you the loss, predictions and gradients
+                # You can then use the gradients in your optimizer manaually or
+                # just call `.apply_updates()` and the recorder will take care
+                # of updating the weights in your model.
                 with hera.BackwardRecorder(model, loss_fn, optimizer) as recorder:
                     loss, predictions, grads = recorder(batch_data, targets=batch_labels)
                     recorder.apply_updates(grads, params)
@@ -122,7 +129,8 @@ class MnistModel(nn.Module):
         # we use `eval_mode` context manager
         # which lets the model enters 
         # evaluation mode then automatically
-        # returns to training mode after exiting from it.
+        # returns to training mode after
+        # exiting from the context manager.
         with hera.eval_mode(model):
             ids = np.random.randint(0, test_data.shape[0], (batch_size,))
             batch_data = train_data[ids, :]

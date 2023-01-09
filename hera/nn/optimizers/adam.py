@@ -11,7 +11,6 @@ class Adam(Optimizer):
         self.init_fn = adam_optimizer.init
         self.update_fn = jax.jit(adam_optimizer.update)
 
-
     def initialize(self, params):
         self.update_optimizer_state(self.init_fn(params))
 

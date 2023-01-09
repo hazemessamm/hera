@@ -1,3 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hera"
+authors = [
+  { name="Hazem Essam", email="hazemessam199@gmail.com" },
+]
+version = "1.0.0"
+
+requires-python = ">=3.7"
+
+description = "Deep Learning library bulit on top of JAX and inspired from PyTorch."
+license = "MIT"
+long_description = "file: README.md"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.author]
+author = "Hazem Essam"
+author_email = "hazemessam199@gmail.com"
+
+[project.maintainer]
+name = "Hazem Essam"
+email = "hazemessam199@gmail.com"
+
+[project.urls]
+"url" = "https://www.github.com/hazemessamm"
+
+
+[options]
+packages = "find:"
+zip_safe = "True"
+
+install_requires = [
+    "jax[cpu]"
+    ]
+
+
+
 [tool.black]
 line-length = 80
 target-version = ['py37']

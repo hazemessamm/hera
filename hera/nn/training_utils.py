@@ -70,7 +70,7 @@ class BackwardRecorder:
 
         Args:
             gradients (Dict): Dictionary of attribute names as keys and
-                              gradients as values. 
+                              gradients as values.
             params (Dict): Dictionary of attribute names as keys and
                            weights as values.
 

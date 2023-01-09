@@ -14,16 +14,14 @@ class Permute(Module):
         super().__init__()
         self.permute_to = permute_to
 
-    def forward(self, weights, inputs):
+    def forward(self, inputs):
         """Permutes the inputs.
 
         Args:
-            weights (Dict): Dictionary with attribute
-                            names as keys and weights as values
             inputs (ndarray): len(permute_to)-D Tensor with
                               order axis (batch_size, *)
 
         Returns:
             ndarray: len(permute_to)-D Tensor
         """
-        return F.permute(weights, inputs, self.permute_to)
+        return F.permute(inputs, self.permute_to)

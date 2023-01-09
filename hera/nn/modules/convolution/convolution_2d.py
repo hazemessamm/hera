@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 from jax import lax
 from jax.nn import initializers
@@ -77,15 +77,19 @@ class Conv2D(Module):
     def _validate_init(self):
         if isinstance(self.kernel_size, tuple):
             if 0 >= len(self.kernel_size) > 2:
-                raise ValueError("`kernel_size` should be a tuple with two "
-                                 "elements or an integer")
+                raise ValueError(
+                    "`kernel_size` should be a tuple with two "
+                    "elements or an integer"
+                )
         elif isinstance(self.kernel_size, int):
             self.kernel_size = (self.kernel_size, self.kernel_size)
 
         if isinstance(self.strides, tuple):
             if 0 >= len(self.strides) > 2:
-                raise ValueError("`strides` should be a tuple with "
-                                 "two elements or an integer")
+                raise ValueError(
+                    "`strides` should be a tuple with "
+                    "two elements or an integer"
+                )
         elif isinstance(self.strides, int):
             self.strides = (self.strides, self.strides)
 
@@ -110,7 +114,7 @@ class Conv2D(Module):
             dimension_numbers=self._dimensions_spec,
         )
 
-    def forward(self, weights: Dict, inputs: DeviceArray):
+    def forward(self, inputs: DeviceArray):
         """Applies convolution operation on inputs.
 
         Args:
@@ -123,15 +127,15 @@ class Conv2D(Module):
             ndarray: A 3D tensor with axis order:
                      (batch_size, height, width, out_channels)
         """
-        if self.use_bias:
-            weights, bias = weights["weight"], weights["bias"]
-        else:
-            weights = weights["weight"]
+
+        if self.bias is None:
             bias = None
+        else:
+            bias = self.bias.data
 
         out = F.conv2d(
             inputs,
-            weights,
+            self.weight.data,
             bias=bias,
             strides=self.strides,
             padding=self.padding,

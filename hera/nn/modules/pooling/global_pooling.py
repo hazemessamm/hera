@@ -6,11 +6,10 @@ from jax.numpy import ndarray
 
 class GlobalMaxPooling1D(Module):
     def __init__(self):
-        """Global Max Pooling Module.
-        """
+        """Global Max Pooling Module."""
         super().__init__()
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, inputs: ndarray):
         """Applies global max pooling over the timesteps axis.
 
         Args:
@@ -22,16 +21,15 @@ class GlobalMaxPooling1D(Module):
         Returns:
             ndarray: A 2D tensor with axis order: (batch_size, features)
         """
-        return F.global_max_pooling_1d(inputs, weights)
+        return F.global_max_pooling_1d(inputs)
 
 
 class GlobalAvgPooling1D(Module):
     def __init__(self):
-        """Global Average Pooling Module.
-        """
+        """Global Average Pooling Module."""
         super().__init__()
 
-    def forward(self, weights, inputs):
+    def forward(self, inputs):
         """Applies global average pooling over the timesteps axis.
 
         Args:
@@ -43,4 +41,4 @@ class GlobalAvgPooling1D(Module):
         Returns:
             ndarray: A 2D tensor with axis order: (batch_size, features)
         """
-        return F.global_avg_pooling_1d(inputs, weights)
+        return F.global_avg_pooling_1d(inputs)

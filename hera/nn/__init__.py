@@ -13,3 +13,4 @@ from .modules import Flatten
 from .losses import CrossEntropyLoss
 from .losses import SparseCrossEntropyLoss
 from .losses import Loss
+from .modules import TransformerEncoderLayer

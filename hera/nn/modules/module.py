@@ -8,6 +8,20 @@ from hera.nn.modules.parameter import Parameter
 
 
 class Module(abc.ABC):
+    def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+        obj._internal_args = args
+        obj._internal_kwargs = kwargs
+
+        # Not a very wise solution,
+        # more clear solution is to use meta-classes
+        # TODO: Add meta-class to control the module class.
+        try:
+            jax.tree_util.register_pytree_node_class(cls)
+        except ValueError:
+            pass
+        return obj
+
     def __init__(
         self,
         rng: Union[int, jax.random.PRNGKey] = None,
@@ -100,13 +114,14 @@ class Module(abc.ABC):
             ):
                 mod.reset_rng()
         else:
-            self.rng = self._initial_rng
+            if self.non_deterministic:
+                self.rng = self._initial_rng
 
     def compute_output_shape(self, input_shape):
         inputs = jax.core.ShapedArray(
             (1, *input_shape[1:]), dtype=jax.numpy.float32
         )
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
+        shape = jax.eval_shape(self.forward, inputs).shape
         # To avoid changing the rng while calculating the output shape.
         self.reset_rng()
         return (None, *shape[1:])
@@ -162,11 +177,11 @@ class Module(abc.ABC):
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    def __call__(self, weights, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         self.jit_forward()
 
         try:
-            pre_out = self.pre_forward_hook(weights, *args, **kwargs)
+            pre_out = self.pre_forward_hook(*args, **kwargs)
         except NotImplementedError:
             pre_out = None
 
@@ -175,8 +190,28 @@ class Module(abc.ABC):
         elif isinstance(pre_out, dict):
             kwargs.update(pre_out)
 
-        out = self.forward(weights, *args, **kwargs)
+        out = self.forward(*args, **kwargs)
         return out
+
+    def tree_flatten(self):
+        children = tuple(mod for mod in self.nested_modules)
+        aux = (self._internal_args, self._internal_kwargs)
+        return (children, aux)
+
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        obj = cls(*aux_data[0], **aux_data[1])
+
+        for i in range(len(obj.nested_modules)):
+            attr = getattr(obj, str(obj.nested_modules[i]._name), None)
+            if attr is not None:
+                setattr(obj, attr._name, children[i])
+            else:
+                if len(obj.nested_modules) > 0:
+                    for i in range(len(obj.nested_modules)):
+                        obj.nested_modules[i] = children[i]
+                        obj.nested_modules[i]._name = str(i)
+        return obj
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"

@@ -21,6 +21,6 @@ class Dropout(Module):
         random_key = self.make_random_key()
         return (random_key,)
 
-    def forward(self, weights, inputs, rng):
-        out = F.dropout(inputs, weights, self.rate, rng, self.training)
+    def forward(self, inputs, rng):
+        out = F.dropout(inputs, self.rate, rng, self.training)
         return out

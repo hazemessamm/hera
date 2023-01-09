@@ -1,5 +1,3 @@
-from typing import Dict
-
 from jax.nn import initializers
 from jax.numpy import ndarray
 
@@ -42,7 +40,7 @@ class Embedding(Module):
     def reset_parameters(self):
         self.weight.reset_parameter()
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, inputs: ndarray):
         """Returns the embedding of each index in the inputs.
 
         Args:
@@ -53,5 +51,5 @@ class Embedding(Module):
         Returns:
             ndarray: A n+1-D tensor with order axis: (*, embed_dim).
         """
-        out = F.embedding(inputs, weights["weight"])
+        out = F.embedding(inputs, self.weight.data)
         return out

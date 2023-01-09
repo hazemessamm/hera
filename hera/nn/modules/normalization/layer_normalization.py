@@ -3,7 +3,6 @@ from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 from hera.nn.modules.parameter import Parameter
 from jax.numpy import ndarray
-from typing import Dict
 
 
 class LayerNormalization(Module):
@@ -54,7 +53,7 @@ class LayerNormalization(Module):
         self.gamma.reset_parameter()
         self.beta.reset_parameter()
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, inputs: ndarray):
         """Applies layer normalization over the feature dimension.
 
         Args:
@@ -65,9 +64,8 @@ class LayerNormalization(Module):
         Returns:
             ndarray: Tensor with shape (*, normalized_shape)
         """
-        if self.scale:
-            gamma = weights["gamma"]
-        if self.center:
-            beta = weights["beta"]
-        out = F.layer_normalization(inputs, gamma, beta, self.eps)
+
+        out = F.layer_normalization(
+            inputs, self.gamma.data, self.beta.data, self.eps
+        )
         return out

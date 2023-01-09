@@ -1,5 +1,4 @@
-from typing import Callable, Dict, Union
-
+from typing import Callable, Union
 from jax.nn import initializers
 from jax.numpy import ndarray
 from jax.random import PRNGKey
@@ -44,6 +43,8 @@ class Linear(Module):
         )
         if use_bias:
             self.bias = Parameter(bias_key, initializers.zeros, (output_dim,))
+
+        self.weight_grad = self.bias_grad = None
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -52,7 +53,7 @@ class Linear(Module):
         if self.use_bias:
             self.bias.reset_parameter()
 
-    def forward(self, weights: Dict, inputs: ndarray) -> ndarray:
+    def forward(self, inputs: ndarray) -> ndarray:
         """Applies linear transformation on the inputs.
 
         Args:
@@ -65,13 +66,7 @@ class Linear(Module):
                      with axis order: (*, output_dim).
         """
 
-        weight = weights["weight"]
-        if self.use_bias:
-            bias = weights["bias"]
-        else:
-            bias = None
-
-        out = F.linear(inputs, weight, bias=bias)
+        out = F.linear(inputs, self.weight.data, bias=self.bias.data)
 
         if self.activation is not None:
             out = self.activation(out)

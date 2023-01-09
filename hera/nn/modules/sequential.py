@@ -26,12 +26,16 @@ class Sequential(Module):
 
     def add_modules(self, modules):
         if not isinstance(modules, list):
-            raise ValueError("Expected `modules` to be a list. "
-                             f"Recieved: {type(modules)}.")
+            raise ValueError(
+                "Expected `modules` to be a list. "
+                f"Recieved: {type(modules)}."
+            )
         if any(not isinstance(mod, Module) for mod in modules):
             types_in_list = [type(mod) for mod in modules]
-            raise ValueError("Expected the list to have modules of type "
-                             f"`Module`. Recieved: {types_in_list}.")
+            raise ValueError(
+                "Expected the list to have modules of type "
+                f"`Module`. Recieved: {types_in_list}."
+            )
         else:
             for idx, mod in enumerate(modules, start=len(self.nested_modules)):
                 mod._name = str(idx)
@@ -39,8 +43,10 @@ class Sequential(Module):
 
     def add(self, module):
         if not isinstance(module, Module):
-            raise ValueError("Expected module with type `Module`. "
-                             f"Recieved {type(module)}")
+            raise ValueError(
+                "Expected module with type `Module`. "
+                f"Recieved {type(module)}"
+            )
         module._name = len(self.nested_modules)
         self.nested_modules.append(module)
 
@@ -48,10 +54,10 @@ class Sequential(Module):
         for k, v in new_weights.items():
             self.nested_modules[int(k)].load_state_dict(v)
 
-    def forward(self, weights, inputs):
+    def forward(self, inputs):
         out = inputs
-        for idx, w in weights.items():
-            out = self.nested_modules[int(idx)](w, out)
+        for mod in self.nested_modules:
+            out = mod(out)
         return out
 
     def update_parameters(self, new_weights):

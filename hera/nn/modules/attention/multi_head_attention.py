@@ -1,5 +1,3 @@
-from typing import Dict
-
 import jax
 from jax import numpy as jnp
 from jax.numpy import ndarray
@@ -41,7 +39,7 @@ class MultiHeadAttention(Module):
         """
         super().__init__(rng=rng, jit=jit)
 
-        if embed_dim % num_heads == 0:
+        if embed_dim % num_heads != 0:
             raise ValueError("embed_dim should be divisble by num_heads")
 
         self.num_heads = num_heads
@@ -58,9 +56,7 @@ class MultiHeadAttention(Module):
         self.o_proj = Linear(embed_dim, embed_dim, o_key, use_bias=use_bias)
         self.attn_dropout = Dropout(dropout, d_key)
 
-    def forward(
-        self, weights: Dict, query: ndarray, key: ndarray, value: ndarray
-    ):
+    def forward(self, query: ndarray, key: ndarray, value: ndarray):
         """Applies mutli head dot product attention.
 
         Args:
@@ -79,9 +75,9 @@ class MultiHeadAttention(Module):
         batch_size = query.shape[0]
 
         # Pass `query`, `key` and `values` to the dense modules.
-        query = self.q_proj(weights["q_proj"], query)
-        key = self.k_proj(weights["k_proj"], key)
-        value = self.v_proj(weights["v_proj"], value)
+        query = self.q_proj(query)
+        key = self.k_proj(key)
+        value = self.v_proj(value)
 
         # Reshape `query`, `key` and `values`
         # from shape [batch_size, seq_len, embed_dim]
@@ -133,7 +129,7 @@ class MultiHeadAttention(Module):
 
         # Dropout the scores (regularizing the scores)
         # to avoid having high dependence on words.
-        scores = self.attn_dropout(weights["attn_dropout"], scores)
+        scores = self.attn_dropout(scores)
 
         scores = jnp.matmul(scores, value)
         # Changing back the `out` shape from
@@ -144,7 +140,7 @@ class MultiHeadAttention(Module):
         scores = jnp.transpose(scores, (0, 2, 1, 3))
         scores = jnp.reshape(scores, (batch_size, -1, self.embed_dim))
         # Pass the outputs to the final output dense module.
-        out = self.o_proj(weights["o_proj"], scores)
+        out = self.o_proj(scores)
         return out
 
     def __repr__(self):

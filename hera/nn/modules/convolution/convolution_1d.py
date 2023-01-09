@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 from jax import lax
 from jax.nn import initializers
@@ -59,7 +59,8 @@ class Conv1D(Module):
         if self.use_bias:
             bias_shape = (self.out_channels,)
             self.bias = Parameter(k2, initializers.zeros, bias_shape)
-
+        else:
+            self.bias = None
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -89,9 +90,11 @@ class Conv1D(Module):
 
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 3:
-            raise ValueError("`input_shape` should be a tuple "
-                             "with len(input_shape) == 4. "
-                             f"Recieved {input_shape}")
+            raise ValueError(
+                "`input_shape` should be a tuple "
+                "with len(input_shape) == 4. "
+                f"Recieved {input_shape}"
+            )
 
         return lax.conv_general_shape_tuple(
             lhs_shape=input_shape,
@@ -101,7 +104,7 @@ class Conv1D(Module):
             dimension_numbers=self._dimensions_spec,
         )
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, inputs: ndarray):
         """Applies convolution operation on inputs.
 
         Args:
@@ -114,15 +117,15 @@ class Conv1D(Module):
             ndarray: A 3D tensor with axis order:
                      (batch_size, timesteps, out_channels)
         """
-        if self.use_bias:
-            weights, bias = weights["weight"], weights["bias"]
-        else:
-            weights = weights["weight"]
+
+        if self.bias is None:
             bias = None
+        else:
+            bias = self.bias
 
         output = F.conv1d(
             inputs,
-            weights,
+            self.weight.data,
             bias=bias,
             strides=self.strides,
             padding=self.padding,

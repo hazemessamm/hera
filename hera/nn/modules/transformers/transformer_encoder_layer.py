@@ -1,10 +1,8 @@
-from typing import Dict
-
 import jax
 from jax.numpy import ndarray
 
 from hera.nn.modules.attention.multi_head_attention import MultiHeadAttention
-from hera.nn.modules.regularization import Dropout
+from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
 from hera.nn.modules.normalization.layer_normalization import LayerNormalization
@@ -81,7 +79,7 @@ class TransformerEncoderLayer(Module):
             embedding_dim, rng=layernorm_2_key
         )
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, inputs: ndarray):
         """Passes the input through a transformer layer.
 
         Args:
@@ -94,8 +92,8 @@ class TransformerEncoderLayer(Module):
             ndarray: 3D tensor with axis order:
                      (batch_size, timesteps, embedding_dim).
         """
-        out = self.mha(weights["mha"], inputs, inputs, inputs)
-        out_res = self.layernorm_1(weights["layernorm_1"], out + inputs)
-        out = self.ff(weights["ff"], out_res)
-        out = self.layernorm_2(weights["layernorm_2"], out + out_res)
+        out = self.mha(inputs, inputs, inputs)
+        out_res = self.layernorm_1(out + inputs)
+        out = self.ff(out_res)
+        out = self.layernorm_2(out + out_res)
         return out

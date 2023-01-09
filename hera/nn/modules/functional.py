@@ -48,7 +48,6 @@ def embedding(inputs: ndarray, weights: ndarray):
 @partial(jax.jit, static_argnames=["rate", "training"])
 def dropout(
     inputs: ndarray,
-    weights: ndarray,
     rate: float,
     rng: ndarray,
     training: bool = True,
@@ -57,7 +56,6 @@ def dropout(
 
     Args:
         inputs (ndarray): An input tensor with shape (*).
-        weights (ndarray): Empty tuple.
         rate (float): The dropout probability between 0. and 1.
         rng (ndarray): Seed that will be used for dropout.
         training (bool, optional): If set to `False` no dropout
@@ -89,12 +87,11 @@ def dropout(
 
 
 @jax.jit
-def flatten(inputs: ndarray, weights: ndarray):
+def flatten(inputs: ndarray):
     """Flattens the inputs while preserving the batch size axis.
 
     Args:
         inputs (ndarray): An input tensor with shape (*).
-        weights (ndarray): An empty tuple.
 
     Returns:
         ndarray: Flattened tensor.
@@ -104,12 +101,11 @@ def flatten(inputs: ndarray, weights: ndarray):
 
 
 @jax.jit
-def permute(inputs: ndarray, weights: ndarray, permute_to: Tuple):
+def permute(inputs: ndarray, permute_to: Tuple):
     """Permutes the inputs.
 
     Args:
         inputs (ndarray): An input tensor with shape (*).
-        weights (ndarray): An empty tuple.
         permute_to (Tuple): Target axis order.
 
     Returns:
@@ -119,12 +115,11 @@ def permute(inputs: ndarray, weights: ndarray, permute_to: Tuple):
 
 
 @jax.jit
-def global_max_pooling_1d(inputs: ndarray, weights: ndarray):
+def global_max_pooling_1d(inputs: ndarray):
     """Applies global max pooling on the temporal data.
 
     Args:
         inputs (ndarray): A 3D input tensor.
-        weights (ndarray): An empty tuple.
 
     Returns:
         ndarray: 2D tensor.
@@ -133,12 +128,11 @@ def global_max_pooling_1d(inputs: ndarray, weights: ndarray):
 
 
 @jax.jit
-def global_avg_pooling_1d(inputs, weights):
+def global_avg_pooling_1d(inputs):
     """Applies global average pooling on the temporal data.
 
     Args:
         inputs (ndarray): A 3D input tensor.
-        weights (ndarray): An empty tuple.
 
     Returns:
         ndarray: 2D tensor.
@@ -147,12 +141,11 @@ def global_avg_pooling_1d(inputs, weights):
 
 
 @jax.jit
-def global_max_pooling_2d(inputs, weights):
+def global_max_pooling_2d(inputs):
     """Applies global max pooling on the spatial data.
 
     Args:
         inputs (ndarray): A 4D input tensor.
-        weights (ndarray): An empty tuple.
 
     Returns:
         ndarray: 2D tensor.
@@ -161,12 +154,11 @@ def global_max_pooling_2d(inputs, weights):
 
 
 @jax.jit
-def global_avg_pooling_2d(inputs, weights):
+def global_avg_pooling_2d(inputs):
     """Applies global max pooling on the spatial data.
 
     Args:
         inputs (ndarray): A 3D input tensor.
-        weights (ndarray): An empty tuple.
 
     Returns:
         ndarray: 2D tensor.
@@ -312,7 +304,7 @@ def conv2d(inputs, weights, bias=None, strides=(1, 1), padding="valid"):
         dimension_numbers=dimension_numbers,
     )
     if bias is not None:
-        out += bias
+        out = jnp.add(out, bias)
 
     return out
 

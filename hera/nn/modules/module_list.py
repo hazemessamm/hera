@@ -25,8 +25,10 @@ class ModuleList(Module):
 
     def add(self, module):
         if not isinstance(module, Module):
-            raise ValueError('Expected module with type `Module`. '
-                             f'Recieved {type(module)}')
+            raise ValueError(
+                "Expected module with type `Module`. "
+                f"Recieved {type(module)}"
+            )
         self.nested_modules.append(module)
 
     def load_state_dict(self, new_weights: OrderedDict):

@@ -1,7 +1,5 @@
 from typing import Callable, Dict, Union
 
-import jax
-from jax import numpy as jnp
 from jax.nn import initializers
 from jax.numpy import ndarray
 from jax.random import PRNGKey
@@ -48,11 +46,6 @@ class Linear(Module):
             self.bias = Parameter(bias_key, initializers.zeros, (output_dim,))
         self.reset_parameters()
 
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
-        return (None, *shape[1:])
-
     def reset_parameters(self):
         """Resets (re-intiialize or initialize) Linear module weights."""
         self.weight.reset_parameter()
@@ -84,8 +77,3 @@ class Linear(Module):
             out = self.activation(out)
 
         return out
-
-    def __repr__(self):
-        return f"""{self.__class__.__name__}(input_dim={self.input_dim},
-                    output_dim={self.output_dim}, activation={self.activation})
-                """

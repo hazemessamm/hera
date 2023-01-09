@@ -58,11 +58,6 @@ class MultiHeadAttention(Module):
         self.o_proj = Linear(embed_dim, embed_dim, o_key, use_bias=use_bias)
         self.attn_dropout = Dropout(dropout, d_key)
 
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs)
-        return (None, *shape[1:]).shape
-
     def forward(
         self, weights: Dict, query: ndarray, key: ndarray, value: ndarray
     ):

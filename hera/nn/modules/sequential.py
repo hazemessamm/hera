@@ -28,6 +28,7 @@ class Sequential(Module):
         if not isinstance(module, Module):
             raise ValueError('Expected module with type `Module`. '
                              f'Recieved {type(module)}')
+        module._name = len(self.nested_modules)
         self.nested_modules.append(module)
 
     def load_state_dict(self, new_weights: OrderedDict):

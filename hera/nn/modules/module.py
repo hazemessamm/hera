@@ -93,24 +93,38 @@ class Module(abc.ABC):
             self.training = True
 
     def reset_rng(self):
-        if self.non_deterministic:
-            self.rng = self._initial_rng
+        if len(self.nested_modules) > 0:
+            for mod in filter(
+                lambda x: isinstance(x, Module) and x.non_deterministic,
+                self.nested_modules,
+            ):
+                mod.reset_rng()
         else:
-            raise ValueError(f"{self} is not a non-deterministic module.")
+            self.rng = self._initial_rng
 
     def compute_output_shape(self, input_shape):
-        return input_shape
+        inputs = jax.core.ShapedArray(
+            (1, *input_shape[1:]), dtype=jax.numpy.float32
+        )
+        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
+        # To avoid changing the rng while calculating the output shape.
+        self.reset_rng()
+        return (None, *shape[1:])
 
     def create_keys(self, n):
         return jax.random.split(self.rng, n)
 
     def make_random_key(self):
-        with jax.core.eval_context():
-            if self.non_deterministic:
-                self.rng, subkey = jax.random.split(self.rng, 2)
-                return subkey
-            else:
-                return self.rng
+        if self.non_deterministic:
+            rng, subkey = jax.random.split(self.rng, 2)
+
+            # To avoid leaks and changing the rng while tracing.
+            if not isinstance(rng, jax.core.Tracer):
+                self.rng = rng
+
+            return subkey
+        else:
+            return self.rng
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         if isinstance(__value, (Module, Parameter)):
@@ -134,8 +148,9 @@ class Module(abc.ABC):
     def jit_forward(self):
         if self.jit and not self._jit_compiled:
             if len(self.nested_modules) > 0:
-                for mod in filter(lambda x: isinstance(x, Module),
-                                  self.nested_modules):
+                for mod in filter(
+                    lambda x: isinstance(x, Module), self.nested_modules
+                ):
                     if any(isinstance(i, Module) for i in mod.nested_modules):
                         mod.jit_forward()
                     else:
@@ -162,3 +177,6 @@ class Module(abc.ABC):
 
         out = self.forward(weights, *args, **kwargs)
         return out
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}"

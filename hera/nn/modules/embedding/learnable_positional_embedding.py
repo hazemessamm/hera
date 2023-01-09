@@ -29,7 +29,3 @@ class PositionalEmbedding(Embedding):
         """
         out = F.positional_embedding(weights, inputs)
         return out
-
-    def __repr__(self):
-        return f"""{self.__class__.__name__}(max_seq_len={self.max_length},
-                    embed_dim={self.embedding_dim})"""

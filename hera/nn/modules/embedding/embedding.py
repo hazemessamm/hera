@@ -1,9 +1,8 @@
 from typing import Dict
 
-import jax
-import jax.numpy as jnp
 from jax.nn import initializers
 from jax.numpy import ndarray
+
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 from hera.nn.modules.parameter import Parameter
@@ -40,11 +39,6 @@ class Embedding(Module):
         )
         self.reset_parameters()
 
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
-        return (None, *shape[1:])
-
     def reset_parameters(self):
         self.weight.reset_parameter()
 
@@ -61,7 +55,3 @@ class Embedding(Module):
         """
         out = F.embedding(inputs, weights["weight"])
         return out
-
-    def __repr__(self):
-        return f"""{self.__class__.__name__}(vocab_size={self.vocab_size},
-                embed_dim={self.embed_dim})"""

@@ -4,7 +4,7 @@ import jax
 from jax.numpy import ndarray
 
 from hera.nn.modules.attention.multi_head_attention import MultiHeadAttention
-from hera.nn.modules.dropout.dropout import Dropout
+from hera.nn.modules.regularization import Dropout
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
 from hera.nn.modules.normalization.layer_normalization import LayerNormalization
@@ -80,13 +80,6 @@ class TransformerEncoderLayer(Module):
         self.layernorm_2 = LayerNormalization(
             embedding_dim, rng=layernorm_2_key
         )
-
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray(
-            (1, *input_shape[1:]), dtype=jax.numpy.float32
-        )
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
-        return (None, *shape[1:])
 
     def forward(self, weights: Dict, inputs: ndarray):
         """Passes the input through a transformer layer.

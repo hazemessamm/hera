@@ -1,6 +1,3 @@
-import jax
-from jax import numpy as jnp
-
 from nn.modules import functional as F
 from nn.modules.module import Module
 from typing import Dict
@@ -12,11 +9,6 @@ class GlobalMaxPooling1D(Module):
         """Global Max Pooling Module.
         """
         super().__init__()
-
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
-        return (None, *shape[1:])
 
     def forward(self, weights: Dict, inputs: ndarray):
         """Applies global max pooling over the timesteps axis.
@@ -38,11 +30,6 @@ class GlobalAvgPooling1D(Module):
         """Global Average Pooling Module.
         """
         super().__init__()
-
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs).shape
-        return (None, *shape[1:])
 
     def forward(self, weights, inputs):
         """Applies global average pooling over the timesteps axis.

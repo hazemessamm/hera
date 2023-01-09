@@ -1,11 +1,9 @@
-import jax
 from jax.nn import initializers
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 from hera.nn.modules.parameter import Parameter
 from jax.numpy import ndarray
 from typing import Dict
-from jax import numpy as jnp
 
 
 class LayerNormalization(Module):
@@ -55,11 +53,6 @@ class LayerNormalization(Module):
     def reset_parameters(self):
         self.gamma.reset_parameter()
         self.beta.reset_parameter()
-
-    def compute_output_shape(self, input_shape):
-        inputs = jax.core.ShapedArray((1, *input_shape[1:]), dtype=jnp.float32)
-        shape = jax.eval_shape(self.forward, self.parameters(), inputs)
-        return (None, *shape[1:]).shape
 
     def forward(self, weights: Dict, inputs: ndarray):
         """Applies layer normalization over the feature dimension.

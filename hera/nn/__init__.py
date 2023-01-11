@@ -14,3 +14,5 @@ from .losses import CrossEntropyLoss
 from .losses import SparseCrossEntropyLoss
 from .losses import Loss
 from .modules import TransformerEncoderLayer
+from .modules import GlobalAvgPooling1D
+from .modules import GlobalMaxPooling1D

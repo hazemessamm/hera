@@ -25,11 +25,11 @@ class Loss(abc.ABC):
     def forward(self, y_pred, y_true):
         raise NotImplementedError
 
-    def jit_forward(self):
+    def jit_compile_forward(self):
         if self.jit and not self._jit_compiled:
             self.forward = jax.jit(self.forward)
             self._jit_compiled = True
 
     def __call__(self, *args, **kwargs):
-        self.jit_forward()
+        self.jit_compile_forward()
         return self.forward(*args, **kwargs)

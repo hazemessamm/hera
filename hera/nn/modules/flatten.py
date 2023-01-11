@@ -11,8 +11,6 @@ class Flatten(Module):
         """Flattens the inputs.
 
         Args:
-            weights (Dict): Dictionary with attribute
-                            names as keys and weights as values
             inputs (ndarray): n+1-D Tensor with order axis (batch_size, *)
 
         Returns:

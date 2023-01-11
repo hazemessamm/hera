@@ -57,8 +57,6 @@ class LayerNormalization(Module):
         """Applies layer normalization over the feature dimension.
 
         Args:
-            weights (Dict): A dictionary with `gamma` and `beta` as keys
-                            and their tensors as values.
             inputs (ndarray): Tensor with shape (*, normalized_shape)
 
         Returns:
@@ -67,5 +65,19 @@ class LayerNormalization(Module):
 
         out = F.layer_normalization(
             inputs, self.gamma.data, self.beta.data, self.eps
+        )
+        return out
+
+    def forward_with_external_weights(self, weights, inputs: ndarray):
+        """Applies layer normalization over the feature dimension.
+
+        Args:
+            inputs (ndarray): Tensor with shape (*, normalized_shape)
+
+        Returns:
+            ndarray: Tensor with shape (*, normalized_shape)
+        """
+        out = F.layer_normalization(
+            inputs, weights["gamma"], weights["beta"], self.eps
         )
         return out

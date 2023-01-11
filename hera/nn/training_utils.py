@@ -8,6 +8,7 @@ from jax.numpy import ndarray
 
 from hera.nn import Loss, Module
 from hera.nn.optimizers import Optimizer
+from hera import backend
 
 apply_updates = jax.jit(optax.apply_updates)
 
@@ -20,6 +21,22 @@ def eval_mode(model):
         yield
     finally:
         model.training = current_state
+
+
+@partial(jax.value_and_grad, argnums=0, has_aux=True)
+def _backward(module, loss, *args, targets, **kwargs):
+    preds = module(*args, **kwargs)
+    loss_val = loss(preds, targets)
+    return loss_val, preds
+
+
+@partial(jax.value_and_grad, argnums=0, has_aux=True)
+def _backward_with_external_weights(
+    weights, module, loss, *args, targets, **kwargs
+):
+    preds = module(weights, *args, **kwargs)
+    loss_val = loss(preds, targets)
+    return loss_val, preds
 
 
 class BackwardRecorder:
@@ -40,15 +57,14 @@ class BackwardRecorder:
         self.module = module
         self.loss = loss
         self.optimizer = optimizer
+        self.gradients = None
 
     def backward(
-        self, weights: Dict, *args, targets: Union[Tuple, ndarray], **kwargs
+        self, *args, targets: Union[Tuple, ndarray], **kwargs
     ) -> Tuple[ndarray, ndarray, Dict]:
         """Applies backward propagation.
 
         Args:
-            weights (Dict): Dictionary of attribute names as keys and
-                            weights as values.
             targets (Union[Tuple, ndarray]): The labels that will be used in
                                              the loss function.
 
@@ -56,15 +72,22 @@ class BackwardRecorder:
             Tuple[ndarray, ndarray, Dict]: Returns the loss value, predictions
                                            and the gradients as a dictionary.
         """
-        @partial(jax.value_and_grad, argnums=0, has_aux=True)
-        def _backward(weights, *args, targets, **kwargs):
-            preds = self.module(weights, *args, **kwargs)
-            loss_val = self.loss(preds, targets)
-            return loss_val, preds
 
-        return _backward(weights, *args, targets=targets, **kwargs)
+        if backend.auto_register_enabled():
+            return _backward(
+                self.module, self.loss, *args, targets=targets, **kwargs
+            )
+        else:
+            return _backward_with_external_weights(
+                self.module.parameters(),
+                self.module,
+                self.loss,
+                *args,
+                targets=targets,
+                **kwargs,
+            )
 
-    def apply_updates(self, gradients: Dict, params: Dict):
+    def step(self):
         """Update the weights using the assigned optimizer and
            update the model with the new weights.
 
@@ -79,10 +102,14 @@ class BackwardRecorder:
                         passing the optimizer in `__init__()`
         """
         if self.optimizer is not None:
-            new_weights = self.optimizer.update_weights(
-                gradients=gradients, params=params
+
+            gradients = (
+                self.gradients.parameters()
+                if backend.auto_register_enabled()
+                else self.gradients
             )
-            self.module.update_parameters(new_weights=new_weights)
+
+            self.optimizer.step(gradients=gradients)
         else:
             raise ValueError(
                 "Expected optimizer with type `Optimizer`. "
@@ -95,9 +122,10 @@ class BackwardRecorder:
 
     def __call__(self, *args, targets, **kwargs):
         (loss_value, predictions), gradients = self.backward(
-            self.module.parameters(), *args, targets=targets, **kwargs
+            *args, targets=targets, **kwargs
         )
-        return loss_value, predictions, gradients
+        self.gradients = gradients
+        return loss_value, predictions
 
     def __exit__(self, *args, **kwargs):
         return None

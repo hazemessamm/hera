@@ -83,8 +83,6 @@ class TransformerEncoderLayer(Module):
         """Passes the input through a transformer layer.
 
         Args:
-            weights (Dict): Dictionary with attribute names as keys
-                            and weights as values.
             inputs (ndarray): 3D tensor with axis order:
                              (batch_size, timesteps, embedding_dim).
 
@@ -96,4 +94,21 @@ class TransformerEncoderLayer(Module):
         out_res = self.layernorm_1(out + inputs)
         out = self.ff(out_res)
         out = self.layernorm_2(out + out_res)
+        return out
+
+    def forward_with_external_weights(self, weights, inputs: ndarray):
+        """Passes the input through a transformer layer.
+
+        Args:
+            inputs (ndarray): 3D tensor with axis order:
+                             (batch_size, timesteps, embedding_dim).
+
+        Returns:
+            ndarray: 3D tensor with axis order:
+                     (batch_size, timesteps, embedding_dim).
+        """
+        out = self.mha(weights["mha"], inputs, inputs, inputs)
+        out_res = self.layernorm_1(weights["layernorm_1"], out + inputs)
+        out = self.ff(weights["ff"], out_res)
+        out = self.layernorm_2(weights["layernorm_2"], out + out_res)
         return out

@@ -1,8 +1,10 @@
 import abc
+from hera.nn import Module
 
 
 class Optimizer(abc.ABC):
-    def __init__(self, lr):
+    def __init__(self, module: Module, lr: float):
+        self.module = module
         self.lr = lr
         self.initalized = False
         self.optimizer_state = None
@@ -17,5 +19,5 @@ class Optimizer(abc.ABC):
             self.initalized = True
 
     @abc.abstractmethod
-    def update_weights(self, gradients, params):
+    def step(self, gradients):
         pass

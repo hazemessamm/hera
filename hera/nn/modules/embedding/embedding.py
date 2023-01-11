@@ -44,12 +44,22 @@ class Embedding(Module):
         """Returns the embedding of each index in the inputs.
 
         Args:
-            weights (Dict): dictionary with the attribute names as keys
-                            and weights as values
-            inputs (ndarray): A n-D tensor of indices
+            inputs (ndarray): A n-D tensor of indices.
 
         Returns:
             ndarray: A n+1-D tensor with order axis: (*, embed_dim).
         """
         out = F.embedding(inputs, self.weight.data)
+        return out
+
+    def forward_with_external_weights(self, weights, inputs: ndarray):
+        """Returns the embedding of each index in the inputs.
+
+        Args:
+            inputs (ndarray): A n-D tensor of indices.
+
+        Returns:
+            ndarray: A n+1-D tensor with order axis: (*, embed_dim).
+        """
+        out = F.embedding(inputs, weights["weight"])
         return out

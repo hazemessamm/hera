@@ -8,6 +8,45 @@ Deep Learning library bulit on top of JAX and inspired from PyTorch
 import hera
 from hera import nn
 
+# Currently, You can use Hera without
+# passing the weights in the `forward()` 
+# method but passing the weights in
+# the forward is significantly faster.
+
+# To disable passing the weights:
+hera.enable_auto_register(True)
+
+class MnistModel(nn.Module):
+    def __init__(self):
+        super().__init__(jit=True)
+        self.conv_1 = nn.Conv2D(1, 32, 3, 3, activation=jax.nn.relu, use_bias=True)
+        self.dropout_1 = nn.Dropout(0.2, 5)
+        
+        self.conv_2 = nn.Conv2D(32, 32, 3, 4, activation=jax.nn.relu)
+        self.dropout_2 = nn.Dropout(0.2, 5)
+
+        self.flatten = nn.Flatten()
+
+        output_shape = self.flatten.compute_output_shape(
+            self.conv_3.compute_output_shape(
+                self.conv_2.compute_output_shape(
+                    self.conv_1.compute_output_shape((1, 28, 28, 1))
+                    )))
+        self.dense_1 = nn.Linear(output_shape[-1], 128, 6, activation=jax.nn.relu)
+        self.dense_2 = nn.Linear(128, 10, 7)
+
+    def forward(self, x):
+        out = self.conv_1(x)
+        out = self.dropout_1(out)
+        out = self.conv_2(out)
+        out = self.dropout_2(out)
+        out = self.flatten(out)
+        out = self.dense_1(out)
+        out = self.dense_2(out)
+        return out
+
+
+
 # Implement the model like PyTorch.
 class MnistModel(nn.Module):
     def __init__(self):
@@ -39,7 +78,7 @@ class MnistModel(nn.Module):
         self.dense_1 = nn.Linear(output_shape[-1], 128, 6)
         self.dense_2 = nn.Linear(128, 10, 7)
 
-    def forward(self, weights, x):
+    def forward_with_external_weights(self, weights, x):
         # When we create our nested layers
         # we also create a dictionary with
         # the attribute names (conv_1, dropout_1, etc..)
@@ -86,7 +125,7 @@ class MnistModel(nn.Module):
         loss_fn = nn.SparseCrossEntropyLoss()
         
         # Adam Optimizer.
-        optimizer = hera.optimizers.Adam(0.001)
+        optimizer = hera.optimizers.Adam(model, 0.001)
         
         with tqdm(range(steps), leave=True) as t:
             for step in t:
@@ -94,14 +133,12 @@ class MnistModel(nn.Module):
                 ids = np.random.randint(0, train_data.shape[0], (batch_size,))
                 batch_data = train_data[ids, :]
                 batch_labels = train_labels[ids]
-                 
-                params = model.parameters()
 
                 # Apply backward propagation.
                 (loss, preds), grads = backward(model.parameters(),
                                                 batch_data, batch_labels, loss_fn)
                 # update the weights
-                new_weights = optimizer.update_weights(grads, params)
+                new_weights = optimizer.step(grads)
                 
                 # Pass the new weights to the model.
                 model.update_parameters(new_weights=new_weights)
@@ -121,8 +158,8 @@ class MnistModel(nn.Module):
                 # just call `.apply_updates()` and the recorder will take care
                 # of updating the weights in your model.
                 with hera.BackwardRecorder(model, loss_fn, optimizer) as recorder:
-                    loss, predictions, grads = recorder(batch_data, targets=batch_labels)
-                    recorder.apply_updates(grads, params)
+                    loss_val, predictions = recorder(batch_data, targets=batch_labels)
+                    recorder.step()
 
         # Instead of model.eval()
         # and model.train() (They are available.) 

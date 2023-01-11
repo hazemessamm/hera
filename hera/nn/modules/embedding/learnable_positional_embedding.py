@@ -18,12 +18,22 @@ class PositionalEmbedding(Embedding):
         """Creates positions tensors and returns their embeddings.
 
         Args:
-            weights (Dict): Dictionary with the attribute names as keys
-                            and weights as values.
             inputs (ndarray): Tensor of indices.
 
         Returns:
             ndarray: A n+1-D tensor with order axis: (*, embed_dim).
         """
         out = F.positional_embedding(inputs, self.weight.data)
+        return out
+
+    def forward_with_external_weights(self, weights, inputs: ndarray):
+        """Creates positions tensors and returns their embeddings.
+
+        Args:
+            inputs (ndarray): Tensor of indices.
+
+        Returns:
+            ndarray: A n+1-D tensor with order axis: (*, embed_dim).
+        """
+        out = F.positional_embedding(inputs, weights["weight"])
         return out

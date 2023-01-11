@@ -60,6 +60,12 @@ class Sequential(Module):
             out = mod(out)
         return out
 
+    def forward_with_external_weights(self, weights, inputs):
+        out = inputs
+        for weight, mod in zip(weights.values(), self.nested_modules):
+            out = mod(weight, out)
+        return out
+
     def update_parameters(self, new_weights):
         for k, v in new_weights.items():
             self.nested_modules[int(k)].update_parameters(v)

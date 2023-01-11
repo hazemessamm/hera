@@ -5,21 +5,26 @@ from typing import Any, List, Union
 import jax
 
 from hera.nn.modules.parameter import Parameter
+from hera import backend
 
 
 class Module(abc.ABC):
+    registered_instances = set()
+
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
         obj._internal_args = args
         obj._internal_kwargs = kwargs
 
-        # Not a very wise solution,
-        # more clear solution is to use meta-classes
+        # Not a very wise solution.
+        # A more clear solution is to use meta-classes
         # TODO: Add meta-class to control the module class.
-        try:
+        if (
+            backend.auto_register_enabled()
+            and cls.__name__ not in cls.registered_instances
+        ):
+            cls.registered_instances.add(cls.__name__)
             jax.tree_util.register_pytree_node_class(cls)
-        except ValueError:
-            pass
         return obj
 
     def __init__(
@@ -36,20 +41,23 @@ class Module(abc.ABC):
 
         self.nested_modules: List[Module] = []
         self.non_deterministic = non_deterministic
+        self._name = None
+        if self.non_deterministic:
+            self._initial_rng = self.rng
+        self._came_from_flatten = False
         # TODO: if a module already has a function
         # that is JIT compiled then no need to re-JIT compile the forward.
+
         self.requires_jit_compilation = False
+        self.cannot_jit_compile = False
 
         # (e.g. Dropout requires different key
         # each call to drop different neurons.)
-        if self.non_deterministic:
-            self._initial_rng = self.rng
 
         self.jit = jit
         self._jit_compiled = False
         self.trainable = True
         self._training = True
-        self._name = None
 
     @property
     def training(self):
@@ -121,7 +129,13 @@ class Module(abc.ABC):
         inputs = jax.core.ShapedArray(
             (1, *input_shape[1:]), dtype=jax.numpy.float32
         )
-        shape = jax.eval_shape(self.forward, inputs).shape
+
+        if backend.auto_register_enabled():
+            shape = jax.eval_shape(self.forward, inputs).shape
+        else:
+            shape = jax.eval_shape(
+                self.forward_with_external_weights, self.parameters(), inputs
+            ).shape
         # To avoid changing the rng while calculating the output shape.
         self.reset_rng()
         return (None, *shape[1:])
@@ -141,6 +155,23 @@ class Module(abc.ABC):
         else:
             return self.rng
 
+    def _jit_compile(self, module):
+        if self.jit and isinstance(module, Module):
+            nested_mods = list(
+                filter(lambda x: isinstance(x, Module), module.nested_modules)
+            )
+            if not nested_mods:
+                if backend.auto_register_enabled():
+                    module.forward = jax.jit(module.forward)
+                else:
+                    module.forward_with_external_weights = jax.jit(
+                        module.forward_with_external_weights
+                    )
+                module.jit = True
+            else:
+                for mod in nested_mods:
+                    self._jit_compile(mod)
+
     def __setattr__(self, __name: str, __value: Any) -> None:
         if isinstance(__value, (Module, Parameter)):
             if not hasattr(self, "nested_modules"):
@@ -149,68 +180,83 @@ class Module(abc.ABC):
                     "Please add it in your subclass `__init__`"
                 )
             self.nested_modules.append(__value)
+
+            if not self._came_from_flatten:
+                self._jit_compile(__value)
+
             __value._name = __name
 
         super().__setattr__(__name, __value)
 
     def pre_forward_hook(self, weights, *args, **kwargs):
-        raise NotImplementedError
+        return None
 
     # TODO: save each gradient to its corresponding layer.
     def save_gradients(self, gradients):
         pass
 
-    def jit_forward(self):
-        if self.jit and not self._jit_compiled:
-            if len(self.nested_modules) > 0:
-                for mod in filter(
-                    lambda x: isinstance(x, Module), self.nested_modules
-                ):
-                    if any(isinstance(i, Module) for i in mod.nested_modules):
-                        mod.jit_forward()
-                    else:
-                        mod.forward = jax.jit(mod.forward)
-            else:
-                mod.forward = jax.jit(mod.forward)
-            self._jit_compiled = True
-
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    def __call__(self, *args, **kwargs):
-        self.jit_forward()
+    def forward_with_external_weights(self, weights, *args, **kwargs):
+        if len(self.nested_modules) == 0:
+            return self.forward(*args, **kwargs)
+        else:
+            raise NotImplementedError
 
-        try:
-            pre_out = self.pre_forward_hook(*args, **kwargs)
-        except NotImplementedError:
-            pre_out = None
+    def predict(self, *args, **kwargs):
+        current_state = self.training
+
+        self.training = False
+        pre_out = self.pre_forward_hook(*args, **kwargs)
 
         if isinstance(pre_out, tuple):
             args += pre_out
         elif isinstance(pre_out, dict):
             kwargs.update(pre_out)
 
-        out = self.forward(*args, **kwargs)
+        if backend.auto_register_enabled():
+            out = self.forward(*args, **kwargs)
+        else:
+            out = self.forward_with_external_weights(
+                self.parameters(), *args, **kwargs
+            )
+        self.training = current_state
+        return out
+
+    def __call__(self, *args, **kwargs):
+        pre_out = self.pre_forward_hook(*args, **kwargs)
+
+        if isinstance(pre_out, tuple):
+            args += pre_out
+        elif isinstance(pre_out, dict):
+            kwargs.update(pre_out)
+
+        if backend.auto_register_enabled():
+            out = self.forward(*args, **kwargs)
+        else:
+            weights = args[0]
+            out = self.forward_with_external_weights(
+                weights, *args[1:], **kwargs
+            )
         return out
 
     def tree_flatten(self):
-        children = tuple(mod for mod in self.nested_modules)
-        aux = (self._internal_args, self._internal_kwargs)
-        return (children, aux)
+        aux = (self._internal_args, self._internal_kwargs, self._name)
+        return (self.nested_modules, aux)
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         obj = cls(*aux_data[0], **aux_data[1])
+        obj._name = aux_data[2]
+        obj._came_from_flatten = True
 
-        for i in range(len(obj.nested_modules)):
-            attr = getattr(obj, str(obj.nested_modules[i]._name), None)
-            if attr is not None:
-                setattr(obj, attr._name, children[i])
-            else:
-                if len(obj.nested_modules) > 0:
-                    for i in range(len(obj.nested_modules)):
-                        obj.nested_modules[i] = children[i]
-                        obj.nested_modules[i]._name = str(i)
+        for i, (o, c) in enumerate(zip(obj.nested_modules, children)):
+            try:
+                setattr(obj, str(o._name), c)
+            except AttributeError:
+                obj.nested_modules[i] = c
+                obj.nested_modules[i]._name = str(i)
         return obj
 
     def __repr__(self) -> str:

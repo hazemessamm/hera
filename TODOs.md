@@ -29,7 +29,8 @@
 - [ ] Module Dict
 - [ ] ConvBert
 - [ ] Serialization
-- [ ] Saving weights
+- [ ] Saving & Loading weights
+- [ ] Convolution Transpose
 
 You are welcome to contribute by adding any of these missing modules or
 if there is another module that you want to add you can submit a pull request or an issue.

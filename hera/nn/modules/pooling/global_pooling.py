@@ -1,6 +1,5 @@
-from nn.modules import functional as F
-from nn.modules.module import Module
-from typing import Dict
+from hera.nn.modules import functional as F
+from hera.nn.modules.module import Module
 from jax.numpy import ndarray
 
 
@@ -13,8 +12,6 @@ class GlobalMaxPooling1D(Module):
         """Applies global max pooling over the timesteps axis.
 
         Args:
-            weights (Dict): Dictionary of attributes as keys
-                            and weights as values.
             inputs (ndarray): A 3D tensor with
                               axis order: (batch_size, timesteps, features)
 

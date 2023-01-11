@@ -108,8 +108,32 @@ class Conv1D(Module):
         """Applies convolution operation on inputs.
 
         Args:
-            weights (Dict): Dictionary containing attribute names as keys
-                            and weights as values.
+            inputs (ndarray): A 3D tensor containing inputs with axis order:
+                              (batch_size, timesteps, in_channels).
+
+        Returns:
+            ndarray: A 3D tensor with axis order:
+                     (batch_size, timesteps, out_channels)
+        """
+        if self.bias is None:
+            bias = None
+        else:
+            bias = self.bias
+
+        output = F.conv1d(
+            inputs,
+            self.weight.data,
+            bias=bias,
+            strides=self.strides,
+            padding=self.padding,
+        )
+
+        return output
+
+    def forward_with_external_weights(self, weights, inputs: ndarray):
+        """Applies convolution operation on inputs.
+
+        Args:
             inputs (ndarray): A 3D tensor containing inputs with axis order:
                               (batch_size, timesteps, in_channels).
 
@@ -121,11 +145,11 @@ class Conv1D(Module):
         if self.bias is None:
             bias = None
         else:
-            bias = self.bias
+            bias = weights["bias"]
 
         output = F.conv1d(
             inputs,
-            self.weight.data,
+            weights["weight"],
             bias=bias,
             strides=self.strides,
             padding=self.padding,

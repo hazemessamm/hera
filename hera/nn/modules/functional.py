@@ -242,8 +242,6 @@ def conv1d(
     Args:
         inputs (ndarray): 3D tensor with shape
                           (batch_size, timesteps, embed_dim)
-        weights (ndarray): 3D tensor with shape
-                           (kernel_size, in_channels, out_channels)
         bias (Optional[ndarray], optional): 1D tensor with shape
                                             (out_channels,). Defaults to None.
         strides (Tuple, optional): Tuple with length 1 indicates the number of
@@ -278,8 +276,6 @@ def conv2d(inputs, weights, bias=None, strides=(1, 1), padding="valid"):
     Args:
         inputs (ndarray): 4D tensor with shape
                           (batch_size, height, width, in_channels)
-        weights (ndarray): 3D tensor with shape
-                           (kernel_size, height, width, out_channels)
         bias (Optional[ndarray], optional): 2D tensor with shape
                                             (out_channels,). Defaults to None.
         strides (Tuple, optional): Tuple with length 2 indicates the number of
@@ -292,6 +288,7 @@ def conv2d(inputs, weights, bias=None, strides=(1, 1), padding="valid"):
         ndarray: 4D Tensor with shape (batch_size, height, width, out_channels)
     """
     dims_spec = ("NHWC", "HWIO", "NHWC")
+
     dimension_numbers = lax.conv_dimension_numbers(
         inputs.shape, weights.shape, dims_spec
     )
@@ -303,10 +300,89 @@ def conv2d(inputs, weights, bias=None, strides=(1, 1), padding="valid"):
         padding=padding,
         dimension_numbers=dimension_numbers,
     )
+
     if bias is not None:
         out = jnp.add(out, bias)
 
     return out
+
+
+@partial(jax.jit, static_argnames=["num_heads", "embed_dim_per_head"])
+def transpose_qkv(query, key, value, num_heads, embed_dim_per_head):
+    # Reshape `query`, `key` and `values`
+    # from shape [batch_size, seq_len, embed_dim]
+    # to [batch_size, seq_len, num_heads, embed_dim // num_heads]
+    # then change the `num_heads` axis from
+    # [batch_size, seq_len, num_heads, embed_dim // num_heads]
+    # to [batch_size, num_heads, seq_len, embed_dim // num_heads]
+    # using the `transpose` function
+    # and the reason for that is that
+    # we want to process each head independetly
+    # we want to have each head to have [seq_len, embed_dim // num_heads]
+    batch_size = query.shape[0]
+
+    query = jnp.reshape(
+        query, (batch_size, -1, num_heads, embed_dim_per_head)
+    ).transpose((0, 2, 1, 3))
+    key = jnp.reshape(
+        key, (batch_size, -1, num_heads, embed_dim_per_head)
+    ).transpose((0, 2, 1, 3))
+    value = jnp.reshape(
+        value, (batch_size, -1, num_heads, embed_dim_per_head)
+    ).transpose((0, 2, 1, 3))
+
+    return query, key, value
+
+
+@jax.jit
+def masked_fill(mask, fill, inputs):
+    out = jnp.select(
+        mask, inputs, jax.lax.broadcast(fill, inputs.shape)
+    )
+    return out
+
+
+@partial(jax.jit, static_argnames=["use_causal_mask"])
+def attention(query, key, use_causal_mask):
+    # Change the key axis from
+    # [batch_size, num_heads, seq_len, embed_dim // num_heads]
+    # to [batch_size, num_heads, embed_dim // num_heads, seq_len]
+    # and the reason for that is because we need to be able
+    # to perform matrix multiplication and in matrix multiplication
+    # we need the first matrix columns to match the second matrix rows
+    # in our situation we want query shape to be
+    # [batch_size, num_heads, seq_len, embed_dim // num_heads]
+    # and key shape to be
+    # [batch_size, num_heads, embed_dim // num_heads, seq_len]
+    # so we can have the last two axis matching each other.
+    embed_dim_per_head = query.shape[-1]
+    mul_key = key.transpose(0, 1, 3, 2)
+
+    # Scale the scores output by the square root
+    # of the embed_dim // num_heads (`embed_dim_per_head`)
+    # to avoid having large variance
+    scores = jnp.matmul(query, mul_key) / jnp.sqrt(embed_dim_per_head)
+
+    # Apply causal mask if it's set to `True`
+    scores = lax.select(
+        use_causal_mask, masked_fill(create_causal_mask(scores), -jnp.inf, scores), scores
+    )
+    scores = jax.nn.softmax(scores, axis=-1)
+    return scores
+
+
+@partial(jax.jit, static_argnames=["embed_dim"])
+def score_value_matmul_and_transpose_scores(scores, value, embed_dim):
+    # Changing back the `out` shape from
+    # [batch_size, num_heads, seq_len, embed_dim // num_heads]
+    # to [batch_size, seq_len, num_heads, embed_dim // num_heads]
+    # so we can collapse back the `num_heads` and `embed_dim // num_heads`
+    # together back to `embed_dim`
+    batch_size = scores.shape[0]
+    scores = jnp.matmul(scores, value)
+    scores = jnp.transpose(scores, (0, 2, 1, 3))
+    scores = jnp.reshape(scores, (batch_size, -1, embed_dim))
+    return scores
 
 
 def batch_normalization(inputs, gamma, beta):

@@ -118,8 +118,6 @@ class Conv2D(Module):
         """Applies convolution operation on inputs.
 
         Args:
-            weights (Dict): Dictionary containing attribute names as keys
-                            and weights as values.
             inputs (ndarray): A 4D tensor containing inputs with axis order:
                               (batch_size, height, width, in_channels).
 
@@ -136,6 +134,36 @@ class Conv2D(Module):
         out = F.conv2d(
             inputs,
             self.weight.data,
+            bias=bias,
+            strides=self.strides,
+            padding=self.padding,
+        )
+
+        if self.activation:
+            out = self.activation(out)
+
+        return out
+
+    def forward_with_external_weights(self, weights, inputs: DeviceArray):
+        """Applies convolution operation on inputs.
+
+        Args:
+            inputs (ndarray): A 4D tensor containing inputs with axis order:
+                              (batch_size, height, width, in_channels).
+
+        Returns:
+            ndarray: A 3D tensor with axis order:
+                     (batch_size, height, width, out_channels)
+        """
+
+        if self.bias is None:
+            bias = None
+        else:
+            bias = weights["bias"]
+
+        out = F.conv2d(
+            inputs,
+            weights["weight"],
             bias=bias,
             strides=self.strides,
             padding=self.padding,

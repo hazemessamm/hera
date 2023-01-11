@@ -43,8 +43,6 @@ class Linear(Module):
         )
         if use_bias:
             self.bias = Parameter(bias_key, initializers.zeros, (output_dim,))
-
-        self.weight_grad = self.bias_grad = None
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -57,8 +55,6 @@ class Linear(Module):
         """Applies linear transformation on the inputs.
 
         Args:
-            weights (Dict): A dictionary containing the weights
-                            with `weights` and `bias` as keys.
             inputs (ndarray): A tensor with axis order: (*, input_dim)
 
         Returns:
@@ -66,7 +62,37 @@ class Linear(Module):
                      with axis order: (*, output_dim).
         """
 
-        out = F.linear(inputs, self.weight.data, bias=self.bias.data)
+        if self.use_bias:
+            bias = self.bias.data
+        else:
+            bias = None
+
+        out = F.linear(inputs, self.weight.data, bias=bias)
+
+        if self.activation is not None:
+            out = self.activation(out)
+
+        return out
+
+    def forward_with_external_weights(
+        self, weights, inputs: ndarray
+    ) -> ndarray:
+        """Applies linear transformation on the inputs.
+
+        Args:
+            inputs (ndarray): A tensor with axis order: (*, input_dim)
+
+        Returns:
+            ndarray: A linearly transformed input
+                     with axis order: (*, output_dim).
+        """
+
+        if self.use_bias:
+            bias = weights["bias"]
+        else:
+            bias = None
+
+        out = F.linear(inputs, weights["weight"], bias=bias)
 
         if self.activation is not None:
             out = self.activation(out)

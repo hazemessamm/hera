@@ -9,7 +9,6 @@ class Parameter:
         self.initializer = initializer
         self.shape = shape
         self._name = None
-        self.grad = None
 
     def reset_parameter(self):
         if self.shape is None:

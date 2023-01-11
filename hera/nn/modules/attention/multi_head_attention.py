@@ -60,8 +60,6 @@ class MultiHeadAttention(Module):
         """Applies mutli head dot product attention.
 
         Args:
-            weights (Dict): Dictionary where the keys are the nested modules
-                            attribute names and their weights as values.
             query (ndarray): 3D tensor with shape
                              (batch_size, timesteps, embed_dim).
             key (ndarray): 3D tensor with shape
@@ -72,75 +70,50 @@ class MultiHeadAttention(Module):
         Returns:
             ndarray: 3D tensor with shape (batch_size, timesteps, embed_dim).
         """
-        batch_size = query.shape[0]
-
         # Pass `query`, `key` and `values` to the dense modules.
         query = self.q_proj(query)
         key = self.k_proj(key)
         value = self.v_proj(value)
-
-        # Reshape `query`, `key` and `values`
-        # from shape [batch_size, seq_len, embed_dim]
-        # to [batch_size, seq_len, num_heads, embed_dim // num_heads]
-        # then change the `num_heads` axis from
-        # [batch_size, seq_len, num_heads, embed_dim // num_heads]
-        # to [batch_size, num_heads, seq_len, embed_dim // num_heads]
-        # using the `transpose` function
-        # and the reason for that is that
-        # we want to process each head independetly
-        # we want to have each head to have [seq_len, embed_dim // num_heads]
-        query = jnp.reshape(
-            query, (batch_size, -1, self.num_heads, self.embed_dim_per_head)
-        ).transpose((0, 2, 1, 3))
-        key = jnp.reshape(
-            key, (batch_size, -1, self.num_heads, self.embed_dim_per_head)
-        ).transpose((0, 2, 1, 3))
-        value = jnp.reshape(
-            value, (batch_size, -1, self.num_heads, self.embed_dim_per_head)
-        ).transpose((0, 2, 1, 3))
-
-        # Change the key axis from
-        # [batch_size, num_heads, seq_len, embed_dim // num_heads]
-        # to [batch_size, num_heads, embed_dim // num_heads, seq_len]
-        # and the reason for that is because we need to be able
-        # to perform matrix multiplication and in matrix multiplication
-        # we need the first matrix columns to match the second matrix rows
-        # in our situation we want query shape to be
-        # [batch_size, num_heads, seq_len, embed_dim // num_heads]
-        # and key shape to be
-        # [batch_size, num_heads, embed_dim // num_heads, seq_len]
-        # so we can have the last two axis matching each other.
-        mul_key = key.transpose(0, 1, 3, 2)
-
-        # Scale the scores output by the square root
-        # of the embed_dim // num_heads (`embed_dim_per_head`)
-        # to avoid having large variance
-        scores = jnp.matmul(query, mul_key) / jnp.sqrt(self.embed_dim_per_head)
-
-        # Apply causal mask if it's set to `True`
-        if self.use_causal_mask:
-            causal_mask = F.create_causal_mask(scores)
-            scores = jnp.select(
-                causal_mask, scores, jax.lax.broadcast(-jnp.inf, scores.shape)
-            )
-
-        # Transform the scores into probabilities.
-        scores = jax.nn.softmax(scores, axis=-1)
-
-        # Dropout the scores (regularizing the scores)
-        # to avoid having high dependence on words.
+        query, key, value = F.transpose_qkv(
+            query, key, value, self.num_heads, self.embed_dim_per_head
+        )
+        scores = F.attention(query, key, self.use_causal_mask)
         scores = self.attn_dropout(scores)
-
-        scores = jnp.matmul(scores, value)
-        # Changing back the `out` shape from
-        # [batch_size, num_heads, seq_len, embed_dim // num_heads]
-        # to [batch_size, seq_len, num_heads, embed_dim // num_heads]
-        # so we can collapse back the `num_heads` and `embed_dim // num_heads`
-        # together back to `embed_dim`
-        scores = jnp.transpose(scores, (0, 2, 1, 3))
-        scores = jnp.reshape(scores, (batch_size, -1, self.embed_dim))
-        # Pass the outputs to the final output dense module.
+        scores = F.score_value_matmul_and_transpose_scores(
+            scores, value, self.embed_dim
+        )
         out = self.o_proj(scores)
+        return out
+
+    def forward_with_external_weights(
+        self, weights, query: ndarray, key: ndarray, value: ndarray
+    ):
+        """Applies mutli head dot product attention.
+
+        Args:
+            query (ndarray): 3D tensor with shape
+                             (batch_size, timesteps, embed_dim).
+            key (ndarray): 3D tensor with shape
+                           (batch_size, timesteps, embed_dim).
+            value (ndarray): 3D tensor with shape
+                             (batch_size, timesteps, embed_dim).
+
+        Returns:
+            ndarray: 3D tensor with shape (batch_size, timesteps, embed_dim).
+        """
+        # Pass `query`, `key` and `values` to the dense modules.
+        query = self.q_proj(weights["q_proj"], query)
+        key = self.k_proj(weights["k_proj"], key)
+        value = self.v_proj(weights["v_proj"], value)
+        query, key, value = F.transpose_qkv(
+            query, key, value, self.num_heads, self.embed_dim_per_head
+        )
+        scores = F.attention(query, key, self.use_causal_mask)
+        scores = self.attn_dropout(weights["attn_dropout"], scores)
+        scores = F.score_value_matmul_and_transpose_scores(
+            scores, value, self.embed_dim
+        )
+        out = self.o_proj(weights["o_proj"], scores)
         return out
 
     def __repr__(self):

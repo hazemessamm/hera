@@ -4,3 +4,7 @@ from .nn.training_utils import BackwardRecorder
 from .nn import optimizers
 from .backend import auto_register_enabled
 from .backend import enable_auto_register
+from .backend import platform
+from .backend import devices
+from .backend import is_gpu_available
+from .backend import device_count

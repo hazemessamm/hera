@@ -1,11 +1,9 @@
-import jax
-from jax import numpy as jnp
 from jax.numpy import ndarray
 
 from hera.nn.modules import functional as F
-from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
+from hera.nn.modules.regularization.dropout import Dropout
 
 
 class MultiHeadAttention(Module):

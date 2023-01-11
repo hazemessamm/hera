@@ -6,12 +6,11 @@ import jax
 import optax
 from jax.numpy import ndarray
 
+from hera import backend
 from hera.nn import Loss, Module
 from hera.nn.optimizers import Optimizer
-from hera import backend
 
 apply_updates = jax.jit(optax.apply_updates)
-
 
 @contextmanager
 def eval_mode(model):

@@ -1,4 +1,5 @@
 from typing import Callable, Union
+
 from jax.nn import initializers
 from jax.numpy import ndarray
 from jax.random import PRNGKey

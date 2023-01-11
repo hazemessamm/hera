@@ -1,9 +1,11 @@
-import optax
-import hera
-from hera.nn.optimizers.base_optimizer import Optimizer
-import jax
-from hera.nn import Module
 from typing import Tuple
+
+import jax
+import optax
+
+import hera
+from hera.nn import Module
+from hera.nn.optimizers.base_optimizer import Optimizer
 
 
 class Adam(Optimizer):

@@ -1,13 +1,15 @@
+from typing import Callable
+
 import jax
 from jax.numpy import ndarray
 
 from hera.nn.modules.attention.multi_head_attention import MultiHeadAttention
-from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
-from hera.nn.modules.normalization.layer_normalization import LayerNormalization
+from hera.nn.modules.normalization.layer_normalization import \
+    LayerNormalization
+from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.sequential import Sequential
-from typing import Callable
 
 
 class TransformerEncoderLayer(Module):
@@ -73,7 +75,7 @@ class TransformerEncoderLayer(Module):
                 Dropout(ff_dropout, rng=ff_dropout_key),
                 Linear(intermediate_dim, embedding_dim, rng=ff_key_2),
             ],
-            jit=jit,
+            jit=False,
         )
         self.layernorm_2 = LayerNormalization(
             embedding_dim, rng=layernorm_2_key

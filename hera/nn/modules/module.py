@@ -4,27 +4,16 @@ from typing import Any, List, Union
 
 import jax
 
-from hera.nn.modules.parameter import Parameter
 from hera import backend
+from hera.nn.modules.parameter import Parameter
 
 
 class Module(abc.ABC):
-    registered_instances = set()
-
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
         obj._internal_args = args
         obj._internal_kwargs = kwargs
-
-        # Not a very wise solution.
-        # A more clear solution is to use meta-classes
-        # TODO: Add meta-class to control the module class.
-        if (
-            backend.auto_register_enabled()
-            and cls.__name__ not in cls.registered_instances
-        ):
-            cls.registered_instances.add(cls.__name__)
-            jax.tree_util.register_pytree_node_class(cls)
+        backend.register_module_if_pytrees_enabled(cls)
         return obj
 
     def __init__(
@@ -33,6 +22,7 @@ class Module(abc.ABC):
         non_deterministic: bool = False,
         jit: bool = False,
     ):
+
         if rng is not None:
             if isinstance(rng, int):
                 self.rng = jax.random.PRNGKey(rng)
@@ -44,10 +34,10 @@ class Module(abc.ABC):
         self._name = None
         if self.non_deterministic:
             self._initial_rng = self.rng
-        self._came_from_flatten = False
+        self._reconstructed_from_tree_unflatten = False
+
         # TODO: if a module already has a function
         # that is JIT compiled then no need to re-JIT compile the forward.
-
         self.requires_jit_compilation = False
         self.cannot_jit_compile = False
 
@@ -155,22 +145,22 @@ class Module(abc.ABC):
         else:
             return self.rng
 
-    def _jit_compile(self, module):
-        if self.jit and isinstance(module, Module):
+    def _jit_compile(self):
+        if self.jit and isinstance(self, Module):
             nested_mods = list(
-                filter(lambda x: isinstance(x, Module), module.nested_modules)
+                filter(lambda x: isinstance(x, Module), self.nested_modules)
             )
             if not nested_mods:
                 if backend.auto_register_enabled():
-                    module.forward = jax.jit(module.forward)
+                    self.forward = jax.jit(self.forward)
                 else:
-                    module.forward_with_external_weights = jax.jit(
-                        module.forward_with_external_weights
+                    self.forward_with_external_weights = jax.jit(
+                        self.forward_with_external_weights
                     )
-                module.jit = True
+                self.jit = True
             else:
                 for mod in nested_mods:
-                    self._jit_compile(mod)
+                    mod._jit_compile()
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         if isinstance(__value, (Module, Parameter)):
@@ -180,10 +170,8 @@ class Module(abc.ABC):
                     "Please add it in your subclass `__init__`"
                 )
             self.nested_modules.append(__value)
-
-            if not self._came_from_flatten:
-                self._jit_compile(__value)
-
+            if not self._reconstructed_from_tree_unflatten and isinstance(__value, Module):
+                __value._jit_compile()
             __value._name = __name
 
         super().__setattr__(__name, __value)
@@ -249,14 +237,10 @@ class Module(abc.ABC):
     def tree_unflatten(cls, aux_data, children):
         obj = cls(*aux_data[0], **aux_data[1])
         obj._name = aux_data[2]
-        obj._came_from_flatten = True
+        obj._reconstructed_from_tree_unflatten = True
 
-        for i, (o, c) in enumerate(zip(obj.nested_modules, children)):
-            try:
-                setattr(obj, str(o._name), c)
-            except AttributeError:
-                obj.nested_modules[i] = c
-                obj.nested_modules[i]._name = str(i)
+        for current_obj, child in zip(obj.nested_modules, children):
+            setattr(obj, str(current_obj._name), child)
         return obj
 
     def __repr__(self) -> str:

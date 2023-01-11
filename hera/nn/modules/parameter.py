@@ -1,7 +1,7 @@
-import jax
+from jax import tree_util
 
 
-@jax.tree_util.register_pytree_node_class
+@tree_util.register_pytree_node_class
 class Parameter:
     def __init__(self, rng, initializer, shape):
         self.data = None

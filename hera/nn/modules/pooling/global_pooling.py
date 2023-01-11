@@ -1,6 +1,7 @@
+from jax.numpy import ndarray
+
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from jax.numpy import ndarray
 
 
 class GlobalMaxPooling1D(Module):

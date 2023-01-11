@@ -38,7 +38,7 @@ packages = "find:"
 zip_safe = "True"
 
 install_requires = [
-    "jax[cpu]"
+    "jax[cpu]",
     "optax"
     ]
 

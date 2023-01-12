@@ -8,8 +8,6 @@ from hera import backend
 from hera.nn.modules.parameter import Parameter
 
 
-
-
 class Module(abc.ABC):
     _reconstructed_from_unflatten = False
     def __new__(cls, *args, **kwargs):
@@ -91,6 +89,15 @@ class Module(abc.ABC):
 
     def parameters(self):
         return self.state_dict()
+
+    # Temporary not a good
+    # or scalable way to save weights
+    # but temporary until using HDF5
+    def save_weights(self, prefix):
+        jax.numpy.save(prefix, self.parameters())
+    
+    def load_weights(self, prefix):
+        return jax.numpy.load(prefix + '.npy', allow_pickle=True).tolist()
 
     def load_state_dict(self, new_weights: OrderedDict):
         for k, v in new_weights.items():

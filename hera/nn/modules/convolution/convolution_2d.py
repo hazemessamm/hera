@@ -62,12 +62,8 @@ class Conv2D(Module):
         if self.use_bias:
             bias_shape = (self.out_channels,)
             self.bias = Parameter(k2, initializers.zeros, bias_shape)
-
-        # self._dn = lax.conv_dimension_numbers(
-        #     (1, 1, 1, in_channels), kernel_shape, self._dimensions_spec
-        # )
-
-        self.reset_parameters()
+        
+        # self.reset_parameters()
 
     def reset_parameters(self):
         self.weight.reset_parameter()

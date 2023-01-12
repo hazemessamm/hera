@@ -12,6 +12,7 @@ from hera.nn.optimizers import Optimizer
 
 apply_updates = jax.jit(optax.apply_updates)
 
+
 @contextmanager
 def eval_mode(model):
     current_state = model.training

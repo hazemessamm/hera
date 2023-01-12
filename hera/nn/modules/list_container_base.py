@@ -24,7 +24,9 @@ class ListContainerModule(Module):
                 )
             elif any(not isinstance(mod, Module) for mod in modules):
                 types = [type(mod) for mod in modules]
-                raise ValueError(f'Expected a list of modules of type `Module`. Recieved {type(types)}')
+                raise ValueError(
+                    f"Expected a list of modules of type `Module`. Recieved {type(types)}"
+                )
             self.nested_modules = modules
         else:
             self.nested_modules = []

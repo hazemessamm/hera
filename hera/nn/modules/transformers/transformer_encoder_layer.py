@@ -6,8 +6,7 @@ from jax.numpy import ndarray
 from hera.nn.modules.attention.multi_head_attention import MultiHeadAttention
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
-from hera.nn.modules.normalization.layer_normalization import \
-    LayerNormalization
+from hera.nn.modules.normalization.layer_normalization import LayerNormalization
 from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.sequential import Sequential
 

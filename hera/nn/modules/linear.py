@@ -44,7 +44,6 @@ class Linear(Module):
         )
         if use_bias:
             self.bias = Parameter(bias_key, initializers.zeros, (output_dim,))
-        self.reset_parameters()
 
     def reset_parameters(self):
         """Resets (re-intiialize or initialize) Linear module weights."""

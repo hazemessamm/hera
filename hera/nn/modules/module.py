@@ -8,11 +8,15 @@ from hera import backend
 from hera.nn.modules.parameter import Parameter
 
 
+
+
 class Module(abc.ABC):
+    _reconstructed_from_unflatten = False
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
-        obj._internal_args = args
-        obj._internal_kwargs = kwargs
+        if cls._reconstructed_from_unflatten:
+            obj._reconstructed_from_tree_unflatten = True
+        cls.save_init_params_if_pytrees_enabled(obj, *args, **kwargs)
         backend.register_module_if_pytrees_enabled(cls)
         return obj
 
@@ -32,9 +36,14 @@ class Module(abc.ABC):
         self.nested_modules: List[Module] = []
         self.non_deterministic = non_deterministic
         self._name = None
+
+        # skip init because the 
+        # rest of the attributes are not important.
+        if self._reconstructed_from_unflatten:
+            return
+
         if self.non_deterministic:
             self._initial_rng = self.rng
-        self._reconstructed_from_tree_unflatten = False
 
         # TODO: if a module already has a function
         # that is JIT compiled then no need to re-JIT compile the forward.
@@ -48,6 +57,12 @@ class Module(abc.ABC):
         self._jit_compiled = False
         self.trainable = True
         self._training = True
+
+    @classmethod
+    def save_init_params_if_pytrees_enabled(cls, obj, *args, **kwargs):
+        if backend.auto_register_enabled():
+            obj._internal_args = args
+            obj._internal_kwargs = kwargs
 
     @property
     def training(self):
@@ -89,11 +104,11 @@ class Module(abc.ABC):
         out = OrderedDict()
         for mod in self.nested_modules:
             if isinstance(mod, Module):
-                out.update({mod._name: mod.state_dict()})
+                out[mod._name] = mod.state_dict()
             elif isinstance(mod, Parameter):
-                out.update({mod._name: mod.data})
+                out[mod._name] = mod.data
             else:
-                out.update({mod: ()})
+                out[mod] = ()
         return out
 
     def eval(self):
@@ -170,7 +185,9 @@ class Module(abc.ABC):
                     "Please add it in your subclass `__init__`"
                 )
             self.nested_modules.append(__value)
-            if not self._reconstructed_from_tree_unflatten and isinstance(__value, Module):
+            if not self._reconstructed_from_unflatten and isinstance(
+                __value, Module
+            ):
                 __value._jit_compile()
             __value._name = __name
 
@@ -230,17 +247,19 @@ class Module(abc.ABC):
         return out
 
     def tree_flatten(self):
-        aux = (self._internal_args, self._internal_kwargs, self._name)
-        return (self.nested_modules, aux)
+        return (self.nested_modules, (self._internal_args, self._internal_kwargs, self._name))
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
+        cls._reconstructed_from_unflatten = True
         obj = cls(*aux_data[0], **aux_data[1])
         obj._name = aux_data[2]
-        obj._reconstructed_from_tree_unflatten = True
+        
 
         for current_obj, child in zip(obj.nested_modules, children):
-            setattr(obj, str(current_obj._name), child)
+            obj.__setattr__(str(current_obj._name), child)
+        
+        cls._reconstructed_from_unflatten = False
         return obj
 
     def __repr__(self) -> str:

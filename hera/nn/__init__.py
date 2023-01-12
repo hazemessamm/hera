@@ -16,3 +16,25 @@ from .losses import Loss
 from .modules import TransformerEncoderLayer
 from .modules import GlobalAvgPooling1D
 from .modules import GlobalMaxPooling1D
+from jax.nn import (
+    hard_tanh,
+    celu,
+    elu,
+    gelu,
+    glu,
+    hard_sigmoid,
+    hard_silu,
+    leaky_relu,
+    log_sigmoid,
+    log_softmax,
+    one_hot,
+    relu,
+    relu6,
+    hard_swish,
+    selu,
+    sigmoid,
+    silu,
+    soft_sign,
+    softmax,
+    softplus,
+)

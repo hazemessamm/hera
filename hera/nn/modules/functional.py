@@ -7,6 +7,7 @@ from jax import numpy as jnp
 from jax.numpy import ndarray
 
 
+
 @jax.jit
 def linear(inputs: ndarray, weights: ndarray, bias: Optional[ndarray] = None):
     """Applies linear transformation on inputs.
@@ -336,9 +337,7 @@ def transpose_qkv(query, key, value, num_heads, embed_dim_per_head):
 
 @jax.jit
 def masked_fill(mask, fill, inputs):
-    out = jnp.select(
-        mask, inputs, jax.lax.broadcast(fill, inputs.shape)
-    )
+    out = jnp.select(mask, inputs, jax.lax.broadcast(fill, inputs.shape))
     return out
 
 
@@ -365,7 +364,9 @@ def attention(query, key, use_causal_mask):
 
     # Apply causal mask if it's set to `True`
     scores = lax.select(
-        use_causal_mask, masked_fill(create_causal_mask(scores), -jnp.inf, scores), scores
+        use_causal_mask,
+        masked_fill(create_causal_mask(scores), -jnp.inf, scores),
+        scores,
     )
     scores = jax.nn.softmax(scores, axis=-1)
     return scores

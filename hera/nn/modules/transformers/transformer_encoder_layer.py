@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Dict
 
 import jax
 from jax.numpy import ndarray
@@ -6,7 +6,8 @@ from jax.numpy import ndarray
 from hera.nn.modules.attention.multi_head_attention import MultiHeadAttention
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
-from hera.nn.modules.normalization.layer_normalization import LayerNormalization
+from hera.nn.modules.normalization.layer_normalization import \
+    LayerNormalization
 from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.sequential import Sequential
 
@@ -97,10 +98,11 @@ class TransformerEncoderLayer(Module):
         out = self.layernorm_2(out + out_res)
         return out
 
-    def forward_with_external_weights(self, weights, inputs: ndarray):
+    def forward_manual(self, weights: Dict, inputs: ndarray):
         """Passes the input through a transformer layer.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             inputs (ndarray): 3D tensor with axis order:
                              (batch_size, timesteps, embedding_dim).
 

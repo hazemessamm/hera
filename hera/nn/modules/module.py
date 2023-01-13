@@ -32,6 +32,9 @@ class Module(abc.ABC):
                 self.rng = rng
 
         self.nested_modules: List[Module] = []
+        
+        # (e.g. Dropout requires different key
+        # each call to drop different neurons.)
         self.non_deterministic = non_deterministic
         self._name = None
 
@@ -44,12 +47,10 @@ class Module(abc.ABC):
             self._initial_rng = self.rng
 
         # TODO: if a module already has a function
-        # that is JIT compiled then no need to re-JIT compile the forward.
+        # that is JIT compiled then no need
+        # to re-JIT compile the forward.
         self.requires_jit_compilation = False
         self.cannot_jit_compile = False
-
-        # (e.g. Dropout requires different key
-        # each call to drop different neurons.)
 
         self.jit = jit
         self._jit_compiled = False
@@ -146,7 +147,7 @@ class Module(abc.ABC):
             shape = jax.eval_shape(self.forward, inputs).shape
         else:
             shape = jax.eval_shape(
-                self.forward_with_external_weights, self.parameters(), inputs
+                self.forward_manual, self.parameters(), inputs
             ).shape
         # To avoid changing the rng while calculating the output shape.
         self.reset_rng()
@@ -176,8 +177,8 @@ class Module(abc.ABC):
                 if backend.auto_register_enabled():
                     self.forward = jax.jit(self.forward)
                 else:
-                    self.forward_with_external_weights = jax.jit(
-                        self.forward_with_external_weights
+                    self.forward_manual = jax.jit(
+                        self.forward_manual
                     )
                 self.jit = True
             else:
@@ -210,7 +211,7 @@ class Module(abc.ABC):
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    def forward_with_external_weights(self, weights, *args, **kwargs):
+    def forward_manual(self, weights, *args, **kwargs):
         if len(self.nested_modules) == 0:
             return self.forward(*args, **kwargs)
         else:
@@ -230,7 +231,7 @@ class Module(abc.ABC):
         if backend.auto_register_enabled():
             out = self.forward(*args, **kwargs)
         else:
-            out = self.forward_with_external_weights(
+            out = self.forward_manual(
                 self.parameters(), *args, **kwargs
             )
         self.training = current_state
@@ -248,7 +249,7 @@ class Module(abc.ABC):
             out = self.forward(*args, **kwargs)
         else:
             weights = args[0]
-            out = self.forward_with_external_weights(
+            out = self.forward_manual(
                 weights, *args[1:], **kwargs
             )
         return out

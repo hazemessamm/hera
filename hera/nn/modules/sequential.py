@@ -1,4 +1,6 @@
-from typing import List
+from typing import Dict, List
+
+from jax.numpy import ndarray
 
 from hera.nn.modules.list_container_base import ListContainerModule
 
@@ -13,7 +15,7 @@ class Sequential(ListContainerModule):
             out = mod(out)
         return out
 
-    def forward_with_external_weights(self, weights, inputs):
+    def forward_manual(self, weights: Dict, inputs: ndarray):
         out = inputs
         for weight, mod in zip(weights.values(), self.nested_modules):
             out = mod(weight, out)

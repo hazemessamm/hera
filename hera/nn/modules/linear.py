@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Dict, Union
 
 from jax.nn import initializers
 from jax.numpy import ndarray
@@ -74,12 +74,13 @@ class Linear(Module):
 
         return out
 
-    def forward_with_external_weights(
-        self, weights, inputs: ndarray
+    def forward_manual(
+        self, weights: Dict, inputs: ndarray
     ) -> ndarray:
         """Applies linear transformation on the inputs.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             inputs (ndarray): A tensor with axis order: (*, input_dim)
 
         Returns:

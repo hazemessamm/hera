@@ -78,7 +78,7 @@ class MnistModel(nn.Module):
         self.dense_1 = nn.Linear(output_shape[-1], 128, 6)
         self.dense_2 = nn.Linear(128, 10, 7)
 
-    def forward_with_external_weights(self, weights, x):
+    def forward_manual(self, weights, x):
         # When we create our nested layers
         # we also create a dictionary with
         # the attribute names (conv_1, dropout_1, etc..)

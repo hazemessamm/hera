@@ -1,3 +1,5 @@
+from typing import Dict
+
 from jax.nn import initializers
 from jax.numpy import ndarray
 
@@ -69,10 +71,11 @@ class LayerNormalization(Module):
         )
         return out
 
-    def forward_with_external_weights(self, weights, inputs: ndarray):
+    def forward_manual(self, weights: Dict, inputs: ndarray):
         """Applies layer normalization over the feature dimension.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             inputs (ndarray): Tensor with shape (*, normalized_shape)
 
         Returns:

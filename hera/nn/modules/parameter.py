@@ -1,6 +1,5 @@
 from jax import tree_util
 
-
 @tree_util.register_pytree_node_class
 class Parameter:
     _reconstructed_from_unflatten = False

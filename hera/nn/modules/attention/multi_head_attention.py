@@ -1,3 +1,5 @@
+from typing import Dict
+
 from jax.numpy import ndarray
 
 from hera.nn.modules import functional as F
@@ -83,12 +85,13 @@ class MultiHeadAttention(Module):
         out = self.o_proj(scores)
         return out
 
-    def forward_with_external_weights(
-        self, weights, query: ndarray, key: ndarray, value: ndarray
+    def forward_manual(
+        self, weights: Dict, query: ndarray, key: ndarray, value: ndarray
     ):
         """Applies mutli head dot product attention.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             query (ndarray): 3D tensor with shape
                              (batch_size, timesteps, embed_dim).
             key (ndarray): 3D tensor with shape

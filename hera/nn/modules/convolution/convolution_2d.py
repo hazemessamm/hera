@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from jax import lax
 from jax.nn import initializers
@@ -140,10 +140,11 @@ class Conv2D(Module):
 
         return out
 
-    def forward_with_external_weights(self, weights, inputs: DeviceArray):
+    def forward_manual(self, weights: Dict, inputs: DeviceArray):
         """Applies convolution operation on inputs.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             inputs (ndarray): A 4D tensor containing inputs with axis order:
                               (batch_size, height, width, in_channels).
 

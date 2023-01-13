@@ -1,3 +1,5 @@
+from typing import Dict
+
 from jax.nn import initializers
 from jax.numpy import ndarray
 
@@ -52,10 +54,11 @@ class Embedding(Module):
         out = F.embedding(inputs, self.weight.data)
         return out
 
-    def forward_with_external_weights(self, weights, inputs: ndarray):
+    def forward_manual(self, weights: Dict, inputs: ndarray):
         """Returns the embedding of each index in the inputs.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             inputs (ndarray): A n-D tensor of indices.
 
         Returns:

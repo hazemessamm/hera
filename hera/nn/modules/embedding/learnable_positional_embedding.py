@@ -1,3 +1,5 @@
+from typing import Dict
+
 from jax.numpy import ndarray
 from nn.modules import functional as F
 from nn.modules.embedding.embedding import Embedding
@@ -26,10 +28,11 @@ class PositionalEmbedding(Embedding):
         out = F.positional_embedding(inputs, self.weight.data)
         return out
 
-    def forward_with_external_weights(self, weights, inputs: ndarray):
+    def forward_manual(self, weights: Dict, inputs: ndarray):
         """Creates positions tensors and returns their embeddings.
 
         Args:
+            weights: (Dict): Dictionary with attribute names as keys and weights as values.
             inputs (ndarray): Tensor of indices.
 
         Returns:

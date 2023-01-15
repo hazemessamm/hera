@@ -12,7 +12,6 @@ from hera.nn.optimizers import Optimizer
 
 apply_updates = jax.jit(optax.apply_updates)
 
-
 @contextmanager
 def eval_mode(model):
     current_state = model.training
@@ -21,7 +20,6 @@ def eval_mode(model):
         yield
     finally:
         model.training = current_state
-
 
 @partial(jax.value_and_grad, argnums=0, has_aux=True)
 def _backward(module, loss, *args, targets, **kwargs):
@@ -108,7 +106,6 @@ class BackwardRecorder:
                 if backend.auto_register_enabled()
                 else self.gradients
             )
-
             self.optimizer.step(gradients=gradients)
         else:
             raise ValueError(

@@ -61,10 +61,9 @@ class ListContainerModule(Module):
             )
         module._name = len(self.nested_modules)
         self.nested_modules.append(module)
-
-    def load_state_dict(self, new_weights: OrderedDict):
-        for k, v in new_weights.items():
-            self.nested_modules[int(k)].load_state_dict(v)
+    
+    def __getitem__(self, idx):
+        return self.nested_modules[idx]
 
     def update_parameters(self, new_weights):
         for k, v in new_weights.items():

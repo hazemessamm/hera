@@ -38,6 +38,7 @@ class Module(abc.ABC):
         # each call to drop different neurons.)
         self.non_deterministic = non_deterministic
         self._name = None
+        self.trainable = True
 
         # skip init because the 
         # rest of the attributes are not important.
@@ -55,7 +56,6 @@ class Module(abc.ABC):
 
         self.jit = jit
         self._jit_compiled = False
-        self.trainable = True
         self._training = True
 
     @classmethod
@@ -90,41 +90,55 @@ class Module(abc.ABC):
                 out.update_parameters(w)
 
     def parameters(self):
-        return self.state_dict()
-
-    def save_weights(self, prefix):
-        with h5py.File(prefix + '.h5', 'w') as f:
-            f.update(self.parameters())
-    
-    def load_weights(self, prefix):
-        with h5py.File(prefix + '.h5', 'w') as f:
-            for mod in self.nested_modules:
-                if isinstance(mod, Module):
-                    mod.load_state_dict(f[mod._name][:])
-                elif isinstance(mod, Parameter):
-                    mod.data = f[mod._name][:]
-                else:
-                    raise KeyError
-                
-
-    def load_state_dict(self, new_weights: OrderedDict):
-        for k, v in new_weights.items():
-            out = getattr(self, k)
-            if isinstance(out, Parameter):
-                out.data = v
-            else:
-                out.load_state_dict(v)
-
-    def state_dict(self):
         out = OrderedDict()
         for mod in self.nested_modules:
             if isinstance(mod, Module):
-                out[mod._name] = mod.state_dict()
+                out[mod._name] = mod.parameters()
             elif isinstance(mod, Parameter):
                 out[mod._name] = mod.data
             else:
                 out[mod] = ()
         return out
+
+    def save_weights(self, prefix):
+        with h5py.File(prefix + '.h5', 'w') as f:
+            f.update(self.state_dict())
+    
+    def load_weights(self, prefix):
+        state = OrderedDict()
+        with h5py.File(prefix + '.h5', 'r') as f:
+            for k, v in f.items():
+                state[k] = v[:]
+        return state
+
+    def load_state_dict(self, new_weights: OrderedDict):
+        for k, v in new_weights.items():
+            subkeys = k.split('.')
+            mod = self
+            for subk in subkeys:
+                if subk.isdigit():
+                    mod = mod[int(subk)]
+                else:
+                    mod = getattr(mod, subk)
+            setattr(mod, subkeys[-1], v)
+
+    def state_dict(self):
+        state = OrderedDict()
+        def _state_dict(mod, state, prefix):
+            for m in mod.nested_modules:
+                if isinstance(m, Parameter):
+                    state[prefix + m._name] = m.data
+                else:
+                    _state_dict(m, state, prefix + m._name + '.')
+            return state
+
+        for mod in self.nested_modules:
+            if isinstance(mod, Parameter):
+                state[mod._name] = mod.data
+            else:
+                prefix = mod._name + '.'
+                state = _state_dict(mod, state, prefix)
+        return state
 
     def eval(self):
         if self._training:

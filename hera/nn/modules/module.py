@@ -6,6 +6,7 @@ import jax
 
 from hera import backend
 from hera.nn.modules.parameter import Parameter
+import h5py
 
 
 class Module(abc.ABC):
@@ -91,14 +92,20 @@ class Module(abc.ABC):
     def parameters(self):
         return self.state_dict()
 
-    # Temporary not a good
-    # or scalable way to save weights
-    # but temporary until using HDF5
     def save_weights(self, prefix):
-        jax.numpy.save(prefix, self.parameters())
+        with h5py.File(prefix + '.h5', 'w') as f:
+            f.update(self.parameters())
     
     def load_weights(self, prefix):
-        return jax.numpy.load(prefix + '.npy', allow_pickle=True).tolist()
+        with h5py.File(prefix + '.h5', 'w') as f:
+            for mod in self.nested_modules:
+                if isinstance(mod, Module):
+                    mod.load_state_dict(f[mod._name][:])
+                elif isinstance(mod, Parameter):
+                    mod.data = f[mod._name][:]
+                else:
+                    raise KeyError
+                
 
     def load_state_dict(self, new_weights: OrderedDict):
         for k, v in new_weights.items():

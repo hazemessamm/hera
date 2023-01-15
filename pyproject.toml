@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
   'optax',
   'h5py==3.7.0',
-  'jax>=0.4.1'
+  'jax==0.4.1'
 ]
 
 [project.author]

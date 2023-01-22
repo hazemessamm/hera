@@ -50,7 +50,7 @@ class CrossEntropyLoss(Loss):
 
 
 # TODO
-class NLLLoss(Module):
+class NLLLoss(Loss):
     def forward(self, y_pred, y_true):
         pass
 

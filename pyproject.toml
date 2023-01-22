@@ -24,6 +24,15 @@ classifiers = [
 dependencies = [
   'optax==0.1.4',
   'h5py==3.7.0',
+]
+
+[project.optional-dependencies]
+cuda = [
+    'jax[cuda]==0.3.25', 
+    'jaxlib==0.3.25'
+]
+
+cpu = [
   'jax==0.3.25',
   'jaxlib==0.3.25'
 ]

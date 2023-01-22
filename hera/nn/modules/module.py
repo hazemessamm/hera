@@ -7,16 +7,19 @@ import jax
 from hera import backend
 from hera.nn.modules.parameter import Parameter
 import h5py
+import inspect
+        
 
 
-class Module(abc.ABC):
+class Module:
     _reconstructed_from_unflatten = False
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
         if cls._reconstructed_from_unflatten:
             obj._reconstructed_from_tree_unflatten = True
-        cls.save_init_params_if_pytrees_enabled(obj, *args, **kwargs)
-        backend.register_module_if_pytrees_enabled(cls)
+        else:
+            cls.save_init_params_if_pytrees_enabled(obj, *args, **kwargs)
+            backend.register_module_if_pytrees_enabled(cls)
         return obj
 
     def __init__(
@@ -42,8 +45,8 @@ class Module(abc.ABC):
 
         # skip init because the 
         # rest of the attributes are not important.
-        if self._reconstructed_from_unflatten:
-            return
+        # if self._reconstructed_from_unflatten:
+            # return
 
         if self.non_deterministic:
             self._initial_rng = self.rng
@@ -61,8 +64,11 @@ class Module(abc.ABC):
     @classmethod
     def save_init_params_if_pytrees_enabled(cls, obj, *args, **kwargs):
         if backend.auto_register_enabled():
-            obj._internal_args = args
-            obj._internal_kwargs = kwargs
+            init_args = inspect.getfullargspec(obj.__init__).args
+            for init_arg, arg in zip(init_args[1:], args):
+                obj.__dict__[init_arg] = arg
+            for k, v in kwargs.items():
+                obj.__dict__[k] = v
 
     @property
     def training(self):
@@ -220,6 +226,7 @@ class Module(abc.ABC):
                 __value._jit_compile()
             __value._name = __name
 
+        
         super().__setattr__(__name, __value)
 
     def pre_forward_hook(self, weights, *args, **kwargs):
@@ -274,15 +281,17 @@ class Module(abc.ABC):
                 weights, *args[1:], **kwargs
             )
         return out
-
+    
     def tree_flatten(self):
-        return (self.nested_modules, (self._internal_args, self._internal_kwargs, self._name))
+        args = inspect.getfullargspec(self.__init__).args
+        kwargs = {k: v for k, v in self.__dict__.items() if k in args}
+        return (self.nested_modules, (kwargs, self._name))
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         cls._reconstructed_from_unflatten = True
-        obj = cls(*aux_data[0], **aux_data[1])
-        obj._name = aux_data[2]
+        obj = cls(**aux_data[0])
+        obj._name = aux_data[1]
         
 
         for current_obj, child in zip(obj.nested_modules, children):

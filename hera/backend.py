@@ -31,10 +31,10 @@ def enable_auto_register(state: bool):
         )
     if _PyTreeRegisterationState.instance is not None:
         raise PyTreeRegisterationStateError("Cannot change the state of the "
-                                              "pytree class registeration "
-                                              "after constructing a module. "
-                                              "Please change the state before "
-                                              "you create any module.")
+                                            "pytree class registeration "
+                                            "after constructing a module. "
+                                            "Please change the state before "
+                                            "you create any module.")
     instance = _PyTreeRegisterationState()
     instance._state = state
 

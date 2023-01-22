@@ -386,6 +386,17 @@ def score_value_matmul_and_transpose_scores(scores, value, embed_dim):
     return scores
 
 
+@partial(jax.jit, static_argnames=['pool_size', 'strides', 'padding'])
+def average_pooling_2d(inputs, pool_size, strides, padding):
+    pool_size = (1, *pool_size, 1)
+    strides = (1, *strides, 1)
+
+    out = lax.reduce_window(inputs, 0.0, lax.add, pool_size, strides, padding)
+    ones = jnp.ones(inputs.shape, dtype=inputs.dtype)
+    window_sizes = lax.reduce_window(ones, 0.0, lax.add, pool_size, strides, padding)
+    return lax.div(out, window_sizes)
+
+
 def batch_normalization(inputs, gamma, beta):
     pass
 

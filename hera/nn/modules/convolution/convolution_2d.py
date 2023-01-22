@@ -52,18 +52,15 @@ class Conv2D(Module):
 
         self._dimensions_spec = ("NHWC", "HWIO", "NHWC")
 
-        self._validate_init()
+        if not self._reconstructed_from_unflatten:
+            self._validate_init()
 
         k1, k2 = self.create_keys(2)
 
-        kernel_shape = (*self.kernel_size, in_channels, out_channels)
-        self.weight = Parameter(k1, initializers.glorot_uniform(), kernel_shape)
+        self.weight = Parameter(rng=k1, initializer=initializers.glorot_uniform(), shape=(*self.kernel_size, in_channels, out_channels))
 
         if self.use_bias:
-            bias_shape = (self.out_channels,)
-            self.bias = Parameter(k2, initializers.zeros, bias_shape)
-        
-        # self.reset_parameters()
+            self.bias = Parameter(rng=k2, initializer=initializers.zeros, shape=(self.out_channels,))
 
     def reset_parameters(self):
         self.weight.reset_parameter()
@@ -80,20 +77,35 @@ class Conv2D(Module):
         elif isinstance(self.kernel_size, int):
             self.kernel_size = (self.kernel_size, self.kernel_size)
 
-        if isinstance(self.strides, tuple):
-            if 0 >= len(self.strides) > 2:
-                raise ValueError(
-                    "`strides` should be a tuple with "
-                    "two elements or an integer"
-                )
-        elif isinstance(self.strides, int):
-            self.strides = (self.strides, self.strides)
+        if isinstance(self.strides, int):
+            if self.strides <= 0:
+                raise ValueError(f"`strides` should be a tuple with 2 values bigger than zero. Recieved {self.strides}")
+            self.strides = (1, self.strides, self.strides, 1)
+        elif isinstance(self.strides, tuple):
+            if 1 <= len(self.strides) < 2:
+                self.strides += self.strides
+            elif len(self.strides) > 2 or len(self.strides) < 1:
+                raise ValueError(f'`strides` should be a tuple with length of 2. Recieved {self.strides}')
+        else:
+            raise ValueError(f'Expected `strides` to be a tuple with length of 2 or an integer. Recieved {self.strides}')
 
-        if self.padding == "causal":
-            raise ValueError(
-                "`causal` padding is only allowed in "
-                f"`Conv1D` module. Recieved padding={self.padding}"
-            )
+        if any(s <= 0 for s in self.strides):
+            raise ValueError(f'`strides` should be a tuple of values where each value should be bigger than or equal to 1. Recieved {self.strides}')
+        
+        if isinstance(self.padding, str):
+            if self.padding.lower() not in {'valid', 'same'}:
+                raise ValueError('`padding` should be a string with values'
+                                 f'`valid` or `same` or a tuple with length of 2. '
+                                 f'Recieved {self.padding}')
+            
+            self.padding = self.padding.upper()
+        elif isinstance(self.padding, (list, tuple)):
+            if not any(isinstance(p, tuple) for p in self.padding):
+                raise ValueError(f'`padding` should be a list of 4 tuples where each tuple should contain two elements. Recieved {self.padding}')
+        else:
+            raise ValueError(f'Expected `padding` to be a `str`, `list` or `tuple` of 4 `tuples` where each `t`uple should contain two elements. Recieved {self.padding}')
+
+
 
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 4:
@@ -129,7 +141,7 @@ class Conv2D(Module):
 
         out = F.conv2d(
             inputs,
-            self.weight.data,
+            weights=self.weight.data,
             bias=bias,
             strides=self.strides,
             padding=self.padding,

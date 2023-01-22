@@ -13,3 +13,4 @@ from .flatten import Flatten
 from .transformers.transformer_encoder_layer import TransformerEncoderLayer
 from .pooling.global_pooling import GlobalAvgPooling1D
 from .pooling.global_pooling import GlobalMaxPooling1D
+from .pooling.average_pooling_2d import AvgPooling2D

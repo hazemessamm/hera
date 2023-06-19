@@ -6,8 +6,8 @@ from collections import OrderedDict
 
 
 class Sequential(Module):
-    def __init__(self, modules: List = None, jit: bool = False):
-        super().__init__(jit=jit)
+    def __init__(self, modules: List = None, jit_compile: bool = False):
+        super().__init__(jit_compile=jit_compile)
         for idx, module in enumerate(modules):
             self.add_module(str(idx), module)
     

@@ -30,7 +30,7 @@ class LayerNormalization(Module):
             eps (float, optional): Epsilon that is used to avoid division
                                    by zero. Defaults to 1e-05.
         """
-        super().__init__(rng)
+        super().__init__(rng, requires_rng=True)
 
         self.normalized_shape = normalized_shape
 
@@ -46,14 +46,6 @@ class LayerNormalization(Module):
             self.add_weight(gamma_key, initializers.ones, (self.normalized_shape,), 'gamma')
         if self.center:
             self.add_weight(beta_key, initializers.zeros, (self.normalized_shape,), 'beta')
-
-    # def build(self):
-    #     gamma_key, beta_key = backend.create_keys(self.rng, 2)
-    #     if self.scale:
-    #         self.add_weight(gamma_key, initializers.ones, (self.normalized_shape,), 'gamma')
-    #     if self.center:
-    #         self.add_weight(beta_key, initializers.zeros, (self.normalized_shape,), 'beta')
-    #     self.built = True
 
     def forward(self, weights: Dict, inputs: ndarray):
         """Applies layer normalization over the feature dimension.

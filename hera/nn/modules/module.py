@@ -15,7 +15,7 @@ class Module(abc.ABC):
         rng: Optional[int] = None,
         non_deterministic: bool = False,
         requires_rng: bool = False,
-        jit: bool = False,
+        jit_compile: bool = False,
     ):
 
         self._rng = rng
@@ -36,7 +36,7 @@ class Module(abc.ABC):
         # to re-JIT compile the forward.
         self.requires_jit_compilation = False
         self.cannot_jit_compile = False
-        self.jit = jit
+        self.jit_compile = jit_compile
         self._jit_compiled = False
         self._training = True
 
@@ -237,12 +237,12 @@ class Module(abc.ABC):
         else:
             return self.rng
 
-    def _jit_compile(self):
+    def _jit_compile_forward_fn(self):
         """USes `jax.jit` to compile a given module, it will be called
            automatically if `jit` is set to True while the instantiation
            of the instance
         """
-        if self.jit and isinstance(self, Module):
+        if self.jit_compile and isinstance(self, Module):
             nested_mods = [
                 mod
                 for mod in self.nested_modules.values()
@@ -250,10 +250,10 @@ class Module(abc.ABC):
             ]
             if not nested_mods:
                 self.forward = jax.jit(self.forward)
-                self.jit = True
+                self.jit_compile = True
             else:
                 for mod in nested_mods:
-                    mod._jit_compile()
+                    mod._jit_compile_forward_fn()
 
     def check_if_init_called(self):
         """Check if __init__ is called before performing any operation.
@@ -275,7 +275,7 @@ class Module(abc.ABC):
         """
         self.check_if_init_called()
         self.nested_modules[name] = module
-        module._jit_compile()
+        module._jit_compile_forward_fn()
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         if isinstance(__value, Module):  # Modules are automatically tracked

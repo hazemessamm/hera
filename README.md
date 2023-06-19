@@ -12,7 +12,7 @@ hera.set_global_rng(5)
 
 class MnistModel(nn.Module):
     def __init__(self):
-        super().__init__(jit=True)
+        super().__init__(jit_compile=True)
 
         self.convs = nn.Sequential([nn.Conv2D(1, 32, 3, activation=jax.nn.gelu),
                                     nn.Dropout(0.2),

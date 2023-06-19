@@ -8,12 +8,6 @@ Deep Learning library bulit on top of JAX and inspired from PyTorch
 import hera
 from hera import nn
 
-# Currently, You can use Hera without
-# passing the weights in the `forward()` 
-# method but passing the weights in
-# the forward is significantly faster.
-
-# To disable passing the weights:
 hera.set_global_rng(5)
 
 class MnistModel(nn.Module):

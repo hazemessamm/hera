@@ -1,9 +1,9 @@
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-
+from hera import backend
 
 class Dropout(Module):
-    def __init__(self, rate: float, rng: int):
+    def __init__(self, rate: float, rng: int = None):
         """Dropout Module
 
         Args:
@@ -11,10 +11,9 @@ class Dropout(Module):
             rng (int): Initial seed that will be used to create another
                        random seeds each dropout call.
         """
-
         # Stochastic module is set to True only in the case of
         # requiring different random number every time we call it.
-        super().__init__(rng, non_deterministic=True)
+        super().__init__(rng, non_deterministic=True, requires_rng=True)
         self.rate = rate
 
     def pre_forward_hook(self, *args, **kwargs):

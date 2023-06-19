@@ -6,6 +6,7 @@ from hera.nn.modules import functional as F
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
 from hera.nn.modules.regularization.dropout import Dropout
+from hera import backend
 
 
 class MultiHeadAttention(Module):
@@ -48,44 +49,19 @@ class MultiHeadAttention(Module):
         self.use_causal_mask = use_causal_mask
         self.dropout = dropout
 
+
+    def build(self):
         # Generate 4 keys for the 4 modules defined below.
-        q_key, k_key, v_key, o_key, d_key = self.create_keys(5)
-        self.q_proj = Linear(embed_dim, embed_dim, q_key, use_bias=use_bias)
-        self.k_proj = Linear(embed_dim, embed_dim, k_key, use_bias=use_bias)
-        self.v_proj = Linear(embed_dim, embed_dim, v_key, use_bias=use_bias)
-        self.o_proj = Linear(embed_dim, embed_dim, o_key, use_bias=use_bias)
-        self.attn_dropout = Dropout(dropout, d_key)
+        q_key, k_key, v_key, o_key, d_key = backend.create_keys(self.rng, 5)
+        self.q_proj = Linear(self.embed_dim, self.embed_dim, q_key, use_bias=self.use_bias)
+        self.k_proj = Linear(self.embed_dim, self.embed_dim, k_key, use_bias=self.use_bias)
+        self.v_proj = Linear(self.embed_dim, self.embed_dim, v_key, use_bias=self.use_bias)
+        self.o_proj = Linear(self.embed_dim, self.embed_dim, o_key, use_bias=self.use_bias)
+        self.attn_dropout = Dropout(self.dropout, d_key)
+        self.built = True
 
-    def forward(self, query: ndarray, key: ndarray, value: ndarray):
-        """Applies mutli head dot product attention.
 
-        Args:
-            query (ndarray): 3D tensor with shape
-                             (batch_size, timesteps, embed_dim).
-            key (ndarray): 3D tensor with shape
-                           (batch_size, timesteps, embed_dim).
-            value (ndarray): 3D tensor with shape
-                             (batch_size, timesteps, embed_dim).
-
-        Returns:
-            ndarray: 3D tensor with shape (batch_size, timesteps, embed_dim).
-        """
-        # Pass `query`, `key` and `values` to the dense modules.
-        query = self.q_proj(query)
-        key = self.k_proj(key)
-        value = self.v_proj(value)
-        query, key, value = F.transpose_qkv(
-            query, key, value, self.num_heads, self.embed_dim_per_head
-        )
-        scores = F.attention(query, key, self.use_causal_mask)
-        scores = self.attn_dropout(scores)
-        scores = F.score_value_matmul_and_transpose_scores(
-            scores, value, self.embed_dim
-        )
-        out = self.o_proj(scores)
-        return out
-
-    def forward_manual(
+    def forward(
         self, weights: Dict, query: ndarray, key: ndarray, value: ndarray
     ):
         """Applies mutli head dot product attention.

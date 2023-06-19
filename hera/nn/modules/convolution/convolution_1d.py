@@ -6,7 +6,8 @@ from jax.numpy import ndarray
 
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from hera.nn.modules.parameter import Parameter
+from hera import backend
+from hera.nn.modules.convolution import conv_validation
 
 
 class Conv1D(Module):
@@ -49,44 +50,32 @@ class Conv1D(Module):
         self.activation = activation
         self.use_bias = use_bias
 
-        self._dimensions_spec = ("NHC", "HIO", "NHC")
+        conv_validation.validate_conv1d_init(self)
 
-        self._validate_init()
-        k1, k2 = self.create_keys(2)
-        kernel_shape = (*self.kernel_size, in_channels, self.out_channels)
-        self.weight = Parameter(k1, initializers.glorot_uniform(), kernel_shape)
+        self._dimensions_spec = ("NHC", "HIO", "NHC")
+        
+        k1, k2 = backend.create_keys(self.rng, 2)
+        kernel_shape = (*self.kernel_size, self.in_channels, self.out_channels)
+        self.add_weight(k1, initializers.xavier_uniform(), kernel_shape, 'weight')
 
         if self.use_bias:
             bias_shape = (self.out_channels,)
-            self.bias = Parameter(k2, initializers.zeros, bias_shape)
+            self.add_weight(k2, initializers.zeros, bias_shape, 'bias')
         else:
             self.bias = None
-        self.reset_parameters()
 
-    def reset_parameters(self):
-        self.weight.reset_parameter()
-        if self.use_bias:
-            self.bias.reset_parameter()
+    # def build(self):
+    #     k1, k2 = backend.create_keys(self.rng, 2)
+    #     kernel_shape = (*self.kernel_size, self.in_channels, self.out_channels)
+    #     self.add_weight(k1, initializers.xavier_uniform(), kernel_shape, 'weight')
 
-    def _validate_init(self):
-        if isinstance(self.kernel_size, tuple):
-            if 0 >= len(self.kernel_size) > 1:
-                msg = """`kernel_size` should be a tuple with one element
-                        or an integer"""
-                raise ValueError(msg)
-        elif isinstance(self.kernel_size, int):
-            self.kernel_size = (self.kernel_size,)
-
-        if isinstance(self.strides, tuple):
-            if 0 >= len(self.strides) > 1:
-                raise ValueError(
-                    "`strides` should be a tuple with one element or an integer"
-                )
-        elif isinstance(self.strides, int):
-            self.strides = (int(self.strides),)
-
-        if self.padding == "causal":
-            raise ValueError("Causal padding is currently not implemented.")
+    #     if self.use_bias:
+    #         bias_shape = (self.out_channels,)
+    #         self.add_weight(k2, initializers.zeros, bias_shape, 'bias')
+    #     else:
+    #         self.bias = None
+        
+    #     self.built = True
 
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 3:
@@ -104,33 +93,7 @@ class Conv1D(Module):
             dimension_numbers=self._dimensions_spec,
         )
 
-    def forward(self, inputs: ndarray):
-        """Applies convolution operation on inputs.
-
-        Args:
-            inputs (ndarray): A 3D tensor containing inputs with axis order:
-                              (batch_size, timesteps, in_channels).
-
-        Returns:
-            ndarray: A 3D tensor with axis order:
-                     (batch_size, timesteps, out_channels)
-        """
-        if self.bias is None:
-            bias = None
-        else:
-            bias = self.bias
-
-        output = F.conv1d(
-            inputs,
-            self.weight.data,
-            bias=bias,
-            strides=self.strides,
-            padding=self.padding,
-        )
-
-        return output
-
-    def forward_manual(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: ndarray):
         """Applies convolution operation on inputs.
 
         Args:

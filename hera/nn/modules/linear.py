@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Union
+from typing import Callable, Dict, Union, Optional
 
 from jax.nn import initializers
 from jax.numpy import ndarray
@@ -6,7 +6,7 @@ from jax.random import PRNGKey
 
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from hera.nn.modules.parameter import Parameter
+from hera import backend
 
 
 class Linear(Module):
@@ -14,7 +14,7 @@ class Linear(Module):
         self,
         input_dim: int,
         output_dim: int,
-        rng: Union[int, PRNGKey],
+        rng: Optional[int] = None,
         activation: Callable = None,
         use_bias: bool = True,
     ):
@@ -25,56 +25,39 @@ class Linear(Module):
             output_dim (int): Size of the output dimension.
             rng (int): Seed or a random number that will
                        be used to create the weights.
+                       Default is None in case of creating a global rng,
+                       otherwise rng should be initialized.
             activation (Callable, optional): An activation function that will
                                              be called after the linear
                                              transformation. Defaults to None.
             use_bias (bool, optional): Whether to use the bias or not.
                                        Defaults to True.
         """
-        super().__init__(rng)
+        super().__init__(rng, requires_rng=True)
         self.activation = activation
         self.output_dim = output_dim
         self.input_dim = input_dim
         self.use_bias = use_bias
 
         # Create 2 subkeys for the weights and bias
-        weight_key, bias_key = self.create_keys(2)
-        self.weight = Parameter(
-            weight_key, initializers.glorot_uniform(), (input_dim, output_dim)
-        )
-        if use_bias:
-            self.bias = Parameter(bias_key, initializers.zeros, (output_dim,))
+        weight_key, bias_key = backend.create_keys(self.rng, 2)
 
-    def reset_parameters(self):
-        """Resets (re-intiialize or initialize) Linear module weights."""
-        self.weight.reset_parameter()
+        self.add_weight(weight_key, initializers.glorot_uniform(), (self.input_dim, self.output_dim), 'weight')
         if self.use_bias:
-            self.bias.reset_parameter()
+            self.add_weight(bias_key, initializers.zeros, (self.output_dim,), 'bias')
 
-    def forward(self, inputs: ndarray) -> ndarray:
-        """Applies linear transformation on the inputs.
 
-        Args:
-            inputs (ndarray): A tensor with axis order: (*, input_dim)
+    # def build(self):
+    #     # Create 2 subkeys for the weights and bias
+    #     weight_key, bias_key = backend.create_keys(self.rng, 2)
 
-        Returns:
-            ndarray: A linearly transformed input
-                     with axis order: (*, output_dim).
-        """
+    #     self.add_weight(weight_key, initializers.glorot_uniform(), (self.input_dim, self.output_dim), 'weight')
+    #     if self.use_bias:
+    #         self.add_weight(bias_key, initializers.zeros, (self.output_dim,), 'bias')
+        
+    #     self.built = True
 
-        if self.use_bias:
-            bias = self.bias.data
-        else:
-            bias = None
-
-        out = F.linear(inputs, self.weight.data, bias=bias)
-
-        if self.activation is not None:
-            out = self.activation(out)
-
-        return out
-
-    def forward_manual(
+    def forward(
         self, weights: Dict, inputs: ndarray
     ) -> ndarray:
         """Applies linear transformation on the inputs.

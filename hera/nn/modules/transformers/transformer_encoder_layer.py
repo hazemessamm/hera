@@ -10,6 +10,7 @@ from hera.nn.modules.normalization.layer_normalization import \
     LayerNormalization
 from hera.nn.modules.regularization.dropout import Dropout
 from hera.nn.modules.sequential import Sequential
+from hera import backend
 
 
 class TransformerEncoderLayer(Module):
@@ -44,6 +45,12 @@ class TransformerEncoderLayer(Module):
                                   the nested modules. Defaults to False.
         """
         super().__init__(rng, jit=jit)
+        self.embedding_dim = embedding_dim
+        self.num_heads = num_heads
+        self.intermediate_dim = intermediate_dim
+        self.attn_dropout = attn_dropout
+        self.ff_dropout = ff_dropout
+        self.ff_activation = ff_activation
         (
             mha_key,
             layernorm_1_key,
@@ -51,54 +58,79 @@ class TransformerEncoderLayer(Module):
             ff_key_2,
             layernorm_2_key,
             ff_dropout_key,
-        ) = self.create_keys(6)
+        ) = backend.create_keys(self.rng, 6)
 
         self.mha = MultiHeadAttention(
-            embedding_dim,
-            num_heads,
+            self.embedding_dim,
+            self.num_heads,
             rng=mha_key,
-            dropout=attn_dropout,
+            dropout=self.attn_dropout,
             use_causal_mask=False,
         )
         self.layernorm_1 = LayerNormalization(
-            embedding_dim, rng=layernorm_1_key
+            self.embedding_dim, rng=layernorm_1_key
         )
 
         self.ff = Sequential(
             [
                 Linear(
-                    embedding_dim,
-                    intermediate_dim,
+                    self.embedding_dim,
+                    self.intermediate_dim,
                     rng=ff_key_1,
-                    activation=ff_activation,
+                    activation=self.ff_activation,
                 ),
-                Dropout(ff_dropout, rng=ff_dropout_key),
-                Linear(intermediate_dim, embedding_dim, rng=ff_key_2),
+                Dropout(self.ff_dropout, rng=ff_dropout_key),
+                Linear(self.intermediate_dim, self.embedding_dim, rng=ff_key_2),
             ],
             jit=False,
         )
         self.layernorm_2 = LayerNormalization(
-            embedding_dim, rng=layernorm_2_key
+            self.embedding_dim, rng=layernorm_2_key
         )
 
-    def forward(self, inputs: ndarray):
-        """Passes the input through a transformer layer.
 
-        Args:
-            inputs (ndarray): 3D tensor with axis order:
-                             (batch_size, timesteps, embedding_dim).
 
-        Returns:
-            ndarray: 3D tensor with axis order:
-                     (batch_size, timesteps, embedding_dim).
-        """
-        out = self.mha(inputs, inputs, inputs)
-        out_res = self.layernorm_1(out + inputs)
-        out = self.ff(out_res)
-        out = self.layernorm_2(out + out_res)
-        return out
+    # def build(self):
+    #     (
+    #         mha_key,
+    #         layernorm_1_key,
+    #         ff_key_1,
+    #         ff_key_2,
+    #         layernorm_2_key,
+    #         ff_dropout_key,
+    #     ) = backend.create_keys(self.rng, 6)
 
-    def forward_manual(self, weights: Dict, inputs: ndarray):
+    #     self.mha = MultiHeadAttention(
+    #         self.embedding_dim,
+    #         self.num_heads,
+    #         rng=mha_key,
+    #         dropout=self.attn_dropout,
+    #         use_causal_mask=False,
+    #     )
+    #     self.layernorm_1 = LayerNormalization(
+    #         self.embedding_dim, rng=layernorm_1_key
+    #     )
+
+    #     self.ff = Sequential(
+    #         [
+    #             Linear(
+    #                 self.embedding_dim,
+    #                 self.intermediate_dim,
+    #                 rng=ff_key_1,
+    #                 activation=self.ff_activation,
+    #             ),
+    #             Dropout(self.ff_dropout, rng=ff_dropout_key),
+    #             Linear(self.intermediate_dim, self.embedding_dim, rng=ff_key_2),
+    #         ],
+    #         jit=False,
+    #     )
+    #     self.layernorm_2 = LayerNormalization(
+    #         self.embedding_dim, rng=layernorm_2_key
+    #     )
+    #     self.built = True
+
+
+    def forward(self, weights: Dict, inputs: ndarray):
         """Passes the input through a transformer layer.
 
         Args:

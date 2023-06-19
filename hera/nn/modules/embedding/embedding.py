@@ -5,7 +5,7 @@ from jax.numpy import ndarray
 
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from hera.nn.modules.parameter import Parameter
+from hera import backend
 
 
 class Embedding(Module):
@@ -30,31 +30,17 @@ class Embedding(Module):
         self.embedding_size = embedding_size
         self.embedding_dim = embedding_dim
         self.padding_idx = padding_idx
+        
+        key = backend.create_keys(self.rng, 1)
+        self.add_weight(key, initializers.uniform(), (self.embedding_size, self.embedding_dim), 'weight')
 
-        key = self.create_keys(1)
-        self.weight = Parameter(
-            key,
-            initializers.uniform(),
-            shape=(self.embedding_size, self.embedding_dim),
-        )
-        self.reset_parameters()
 
-    def reset_parameters(self):
-        self.weight.reset_parameter()
+    # def build(self):
+    #     key = backend.create_keys(self.rng, 1)
+    #     self.add_weight(key, initializers.uniform(), (self.embedding_size, self.embedding_dim), 'weight')
+    #     self.built = True
 
-    def forward(self, inputs: ndarray):
-        """Returns the embedding of each index in the inputs.
-
-        Args:
-            inputs (ndarray): A n-D tensor of indices.
-
-        Returns:
-            ndarray: A n+1-D tensor with order axis: (*, embed_dim).
-        """
-        out = F.embedding(inputs, self.weight.data)
-        return out
-
-    def forward_manual(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: ndarray):
         """Returns the embedding of each index in the inputs.
 
         Args:

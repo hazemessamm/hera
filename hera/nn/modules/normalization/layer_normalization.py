@@ -6,6 +6,7 @@ from jax.numpy import ndarray
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 from hera.nn.modules.parameter import Parameter
+from hera import backend
 
 
 class LayerNormalization(Module):
@@ -40,38 +41,21 @@ class LayerNormalization(Module):
         # Used to avoid dividing by zero
         self.eps = eps
 
-        gamma_key, beta_key = self.create_keys(2)
+        gamma_key, beta_key = backend.create_keys(self.rng, 2)
         if self.scale:
-            self.gamma = Parameter(
-                gamma_key, initializers.ones, shape=(self.normalized_shape,)
-            )
+            self.add_weight(gamma_key, initializers.ones, (self.normalized_shape,), 'gamma')
         if self.center:
-            self.beta = Parameter(
-                beta_key, initializers.zeros, shape=(self.normalized_shape,)
-            )
+            self.add_weight(beta_key, initializers.zeros, (self.normalized_shape,), 'beta')
 
-        self.reset_parameters()
+    # def build(self):
+    #     gamma_key, beta_key = backend.create_keys(self.rng, 2)
+    #     if self.scale:
+    #         self.add_weight(gamma_key, initializers.ones, (self.normalized_shape,), 'gamma')
+    #     if self.center:
+    #         self.add_weight(beta_key, initializers.zeros, (self.normalized_shape,), 'beta')
+    #     self.built = True
 
-    def reset_parameters(self):
-        self.gamma.reset_parameter()
-        self.beta.reset_parameter()
-
-    def forward(self, inputs: ndarray):
-        """Applies layer normalization over the feature dimension.
-
-        Args:
-            inputs (ndarray): Tensor with shape (*, normalized_shape)
-
-        Returns:
-            ndarray: Tensor with shape (*, normalized_shape)
-        """
-
-        out = F.layer_normalization(
-            inputs, self.gamma.data, self.beta.data, self.eps
-        )
-        return out
-
-    def forward_manual(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: ndarray):
         """Applies layer normalization over the feature dimension.
 
         Args:

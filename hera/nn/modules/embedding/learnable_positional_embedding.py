@@ -1,8 +1,8 @@
 from typing import Dict
 
 from jax.numpy import ndarray
-from nn.modules import functional as F
-from nn.modules.embedding.embedding import Embedding
+from hera.nn.modules import functional as F
+from hera.nn.modules.embedding.embedding import Embedding
 
 
 class PositionalEmbedding(Embedding):
@@ -16,19 +16,7 @@ class PositionalEmbedding(Embedding):
         """
         super().__init__(max_length, embedding_dim, rng)
 
-    def forward(self, inputs: ndarray):
-        """Creates positions tensors and returns their embeddings.
-
-        Args:
-            inputs (ndarray): Tensor of indices.
-
-        Returns:
-            ndarray: A n+1-D tensor with order axis: (*, embed_dim).
-        """
-        out = F.positional_embedding(inputs, self.weight.data)
-        return out
-
-    def forward_manual(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: ndarray):
         """Creates positions tensors and returns their embeddings.
 
         Args:

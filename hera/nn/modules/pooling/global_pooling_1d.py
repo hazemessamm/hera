@@ -7,7 +7,7 @@ from hera.nn.modules.module import Module
 class GlobalMaxPooling1D(Module):
     def __init__(self):
         """Global Max Pooling Module."""
-        super().__init__()
+        super().__init__(requires_rng=False)
 
     def forward(self, inputs: ndarray):
         """Applies global max pooling over the timesteps axis.
@@ -25,7 +25,7 @@ class GlobalMaxPooling1D(Module):
 class GlobalAvgPooling1D(Module):
     def __init__(self):
         """Global Average Pooling Module."""
-        super().__init__()
+        super().__init__(requires_rng=False)
 
     def forward(self, inputs):
         """Applies global average pooling over the timesteps axis.

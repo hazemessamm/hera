@@ -1,16 +1,12 @@
 from jax import tree_util
+from typing import Callable
+
 
 @tree_util.register_pytree_node_class
 class Parameter:
-    _reconstructed_from_unflatten = False
-    def __init__(self, rng=None, initializer=None, shape=None):
+    def __init__(self, rng=None, initializer: Callable = None, shape: tuple = None):
         self._data = None
         self._name = None
-        
-        # skip init
-        if self._reconstructed_from_unflatten:
-            return
-        
         self.rng = rng
         self.initializer = initializer
         self.shape = shape
@@ -50,8 +46,6 @@ class Parameter:
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         obj = cls(*aux_data[:-1])
-        cls._reconstructed_from_unflatten = True
         obj._name = aux_data[-1]
         obj._data = children[0]
-        cls._reconstructed_from_unflatten = False
         return obj

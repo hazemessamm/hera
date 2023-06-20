@@ -5,7 +5,7 @@ import jax
 from jax import lax
 from jax import numpy as jnp
 from jax.numpy import ndarray
-
+from hera import backend
 
 
 @jax.jit
@@ -129,11 +129,11 @@ def global_max_pooling_1d(inputs: ndarray):
 
 
 @jax.jit
-def global_avg_pooling_1d(inputs):
+def global_avg_pooling_1d(inputs: ndarray):
     """Applies global average pooling on the temporal data.
 
     Args:
-        inputs (ndarray): A 3D input tensor.
+        inputs (ndarray): A 4D input tensor.
 
     Returns:
         ndarray: 2D tensor.
@@ -142,7 +142,33 @@ def global_avg_pooling_1d(inputs):
 
 
 @jax.jit
-def global_max_pooling_2d(inputs):
+def global_max_pooling_2d(inputs: ndarray):
+    """Applies global max pooling on the temporal data.
+
+    Args:
+        inputs (ndarray): A 4D input tensor.
+
+    Returns:
+        ndarray: 2D tensor.
+    """
+    return jnp.max(inputs, axis=(1, 2))
+
+
+@jax.jit
+def global_avg_pooling_2d(inputs: ndarray):
+    """Applies global average pooling on the temporal data.
+
+    Args:
+        inputs (ndarray): A 3D input tensor.
+
+    Returns:
+        ndarray: 2D tensor.
+    """
+    return jnp.mean(inputs, axis=(1, 2))
+
+
+@jax.jit
+def global_max_pooling_2d(inputs: ndarray):
     """Applies global max pooling on the spatial data.
 
     Args:
@@ -155,7 +181,7 @@ def global_max_pooling_2d(inputs):
 
 
 @jax.jit
-def global_avg_pooling_2d(inputs):
+def global_avg_pooling_2d(inputs: ndarray):
     """Applies global max pooling on the spatial data.
 
     Args:
@@ -395,6 +421,36 @@ def average_pooling_2d(inputs, pool_size, strides, padding):
     ones = jnp.ones(inputs.shape, dtype=inputs.dtype)
     window_sizes = lax.reduce_window(ones, 0.0, lax.add, pool_size, strides, padding)
     return lax.div(out, window_sizes)
+
+
+@backend.mark_experimental(use_instead='hera.nn.MultiHeadAttention')
+@jax.jit
+def multihead_attention(query: jax.numpy.ndarray,
+                        key: jax.numpy.ndarray,
+                        value: jax.numpy.ndarray,
+                        query_weights: jax.numpy.ndarray,
+                        key_weights: jax.numpy.ndarray,
+                        value_weights: jax.numpy.ndarray,
+                        output_weights: jax.numpy.ndarray,
+                        num_heads: int,
+                        dropout_prob: float,
+                        dropout_rng: jax.numpy.ndarray,
+                        use_causal_mask: bool,
+                        training: bool) -> jax.numpy.ndarray:
+    
+    embed_dim_per_head = query.shape[-1] // num_heads
+    query = linear(query, query_weights)
+    key = linear(key, key_weights)
+    value = linear(value, value_weights)
+    query, key, value = transpose_qkv(
+        query, key, value, num_heads, embed_dim_per_head
+    )
+    scores = attention(query, key, use_causal_mask)
+    scores = dropout(scores, dropout_prob, dropout_rng, training)
+    scores = score_value_matmul_and_transpose_scores(scores, value, self.embed_dim)
+    out = linear(scores, output_weights)
+    return out
+
 
 
 def batch_normalization(inputs, gamma, beta):

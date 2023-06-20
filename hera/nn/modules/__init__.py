@@ -14,3 +14,5 @@ from .transformers import TransformerEncoderLayer
 from .pooling import GlobalAvgPooling1D
 from .pooling import GlobalMaxPooling1D
 from .pooling import AvgPooling2D
+from .pooling import GlobalMaxPooling2D
+from .pooling import GlobalAvgPooling2D

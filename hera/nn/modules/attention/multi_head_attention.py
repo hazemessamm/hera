@@ -1,12 +1,12 @@
 from typing import Dict
 
-from jax.numpy import ndarray
+import jax
 
+from hera import backend
 from hera.nn.modules import functional as F
 from hera.nn.modules.linear import Linear
 from hera.nn.modules.module import Module
 from hera.nn.modules.regularization.dropout import Dropout
-from hera import backend
 
 
 class MultiHeadAttention(Module):
@@ -48,32 +48,28 @@ class MultiHeadAttention(Module):
         self.embed_dim_per_head = embed_dim // num_heads
         self.use_causal_mask = use_causal_mask
         self.dropout = dropout
+        self.use_bias = use_bias
 
-
-    def build(self):
-        # Generate 4 keys for the 4 modules defined below.
-        q_key, k_key, v_key, o_key, d_key = backend.create_keys(self.rng, 5)
-        self.q_proj = Linear(self.embed_dim, self.embed_dim, q_key, use_bias=self.use_bias)
-        self.k_proj = Linear(self.embed_dim, self.embed_dim, k_key, use_bias=self.use_bias)
-        self.v_proj = Linear(self.embed_dim, self.embed_dim, v_key, use_bias=self.use_bias)
-        self.o_proj = Linear(self.embed_dim, self.embed_dim, o_key, use_bias=self.use_bias)
-        self.attn_dropout = Dropout(self.dropout, d_key)
-        self.built = True
+        self.q_proj = Linear(embed_dim, embed_dim, use_bias=use_bias)
+        self.k_proj = Linear(embed_dim, embed_dim, use_bias=use_bias)
+        self.v_proj = Linear(embed_dim, embed_dim, use_bias=use_bias)
+        self.o_proj = Linear(embed_dim, embed_dim, use_bias=use_bias)
+        self.attn_dropout = Dropout(dropout)
 
 
     def forward(
-        self, weights: Dict, query: ndarray, key: ndarray, value: ndarray
-    ):
+        self, weights: Dict, query: jax.numpy.ndarray, key: jax.numpy.ndarray, value: jax.numpy.ndarray
+    ) -> jax.numpy.ndarray:
         """Applies mutli head dot product attention.
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            query (ndarray): 3D tensor with shape
-                             (batch_size, timesteps, embed_dim).
-            key (ndarray): 3D tensor with shape
-                           (batch_size, timesteps, embed_dim).
-            value (ndarray): 3D tensor with shape
-                             (batch_size, timesteps, embed_dim).
+            query (jax.numpy.ndarray): 3D tensor with shape
+                                       (batch_size, timesteps, embed_dim).
+            key (jax.numpy.ndarray): 3D tensor with shape
+                                     (batch_size, timesteps, embed_dim).
+            value (jax.numpy.ndarray): 3D tensor with shape
+                                       (batch_size, timesteps, embed_dim).
 
         Returns:
             ndarray: 3D tensor with shape (batch_size, timesteps, embed_dim).

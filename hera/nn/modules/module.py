@@ -1,12 +1,18 @@
+from __future__ import annotations
+
+import abc
+import inspect
 from collections import OrderedDict
-from typing import Any, Union, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import jax
+import numpy as np
 
 from hera import backend
-import inspect
-import abc
 
+
+def _is_tracer(instance):
+    return isinstance(instance, jax.core.Tracer)
 
 
 class Module(abc.ABC):
@@ -20,7 +26,7 @@ class Module(abc.ABC):
 
         self._rng = rng
         self._requires_rng = requires_rng
-        
+
         # (e.g. Dropout requires different key
         # each call to drop different neurons.)
         self.non_deterministic = non_deterministic
@@ -31,11 +37,6 @@ class Module(abc.ABC):
         self._name = None
 
         self.trainable = True
-        # TODO: if a module already has a function
-        # that is JIT compiled then no need
-        # to re-JIT compile the forward.
-        self.requires_jit_compilation = False
-        self.cannot_jit_compile = False
         self.jit_compile = jit_compile
         self._jit_compiled = False
         self._training = True
@@ -47,48 +48,48 @@ class Module(abc.ABC):
         return self._rng
 
     def _specify_rng_value(self):
-        if self._requires_rng and self._rng is None and backend.global_rng() is None:
-            raise ValueError('`rng` must be either a random number or you '
-                             'should set a global rng using '
-                             '`self.set_global_key()` function. '
-                             f'Recieved: {self._rng}')
-        
-        
+        if (
+            self._requires_rng
+            and self._rng is None
+            and backend.global_rng() is None
+        ):
+            raise ValueError(
+                "`rng` must be either a random number or you "
+                "should set a global rng using "
+                "`self.set_global_key()` function. "
+                f"Recieved: {self._rng}"
+            )
+
         if self._requires_rng and self._rng is not None:
             self._rng = jax.random.PRNGKey(self._rng)
         elif self._requires_rng:
             self._rng = backend.get_and_update_global_rng()
-        
+
         if self.non_deterministic:
             self._initial_rng = self._rng
-
-    @property
-    def global_rng_name(self):
-        return self._global_rng_name
-
-    @property
-    def global_rng(self):
-        instance = backend._RNGState()
-        return instance.rngs[self._global_rng_name]
 
     @property
     def training(self):
         return self._training
 
-    @training.setter
-    def training(self, val: bool):
-        self._training = val
-        for mod in filter(
-            lambda x: isinstance(x, Module), self.nested_modules.values()
-        ):
-            mod.training = val
 
-    def build(self):
-        raise NotImplementedError("`build` should be implemented in a subclass.")
+    def register_parameter(self, name: str, tensor: jax.numpy.ndarray):
+        """Registers a new tensor to the module tensors.
 
-    def add_weight(self, rng: jax.random.PRNGKey,
-                   initialzer: callable,
-                   shape: Tuple, name: str):
+        Args:
+            name (str): Name of the tensor.
+            tensor (jax.numpy.ndarray): Tensor.
+        """
+        with backend.track_tensor():
+            self.__setattr__(name, tensor)
+
+    def add_weight(
+        self,
+        rng: jax.random.PRNGKey,
+        initialzer: callable,
+        shape: Tuple,
+        name: str,
+    ):
         """Creates and adds a tensor and tracks it in a given module
 
         Args:
@@ -127,19 +128,41 @@ class Module(abc.ABC):
         for mod_name, mod in self.nested_modules.items():
             if isinstance(mod, Module):
                 out[mod_name] = mod.parameters()
-            elif isinstance(mod, jax.numpy.ndarray):
+            elif isinstance(mod, (jax.numpy.ndarray, np.ndarray)):
                 out[mod_name] = mod
             else:
                 out[mod_name] = ()
         return out
 
-    def load_state_dict(self, new_weights: OrderedDict):
+    def _validate_parameter_keys(self, weights: Dict):
+        weight_keys = weights.keys()
+        current_module_keys = self.nested_modules.keys()
+
+        unknown_keys = weight_keys - current_module_keys
+        if len(unknown_keys) > 0:
+            raise ValueError(
+                "The passed parameters must have the same keys "
+                "as the current parameters. "
+                f"Unknown keys: {unknown_keys}"
+            )
+
+        missing_keys = current_module_keys - weight_keys
+        if len(missing_keys) > 0:
+            raise ValueError(
+                "The passed parameters must have the same keys "
+                "as the current parameters. "
+                f"Missing keys: {missing_keys}"
+            )
+
+    def load_state_dict(self, weights: OrderedDict):
         """Loads the passed parameters to each module.
 
         Args:
-            new_weights (OrderedDict): Dictionary of parameters.
+            weights (OrderedDict): Dictionary of parameters.
         """
-        for k, v in new_weights.items():
+
+        self._validate_parameter_keys(weights)
+        for k, v in weights.items():
             subkeys = k.split(".")
             mod = self
             for subk in subkeys:
@@ -150,6 +173,8 @@ class Module(abc.ABC):
 
                 if isinstance(current_mod, Module):
                     mod = current_mod
+
+            mod.nested_modules[subkeys[-1]] = v
             mod.__setattr__(subkeys[-1], v)
 
     def state_dict(self):
@@ -162,35 +187,33 @@ class Module(abc.ABC):
 
         def _state_dict(mod, state, prefix):
             for m_name, m in mod.nested_modules.items():
-                if isinstance(m, jax.numpy.ndarray):
+                if isinstance(m, (jax.numpy.ndarray, np.ndarray)):
                     state[prefix + m_name] = m
                 else:
                     _state_dict(m, state, prefix + m_name + ".")
             return state
 
         for mod_name, mod in self.nested_modules.items():
-            if isinstance(mod, jax.numpy.ndarray):
+            if isinstance(mod, (jax.numpy.ndarray, np.ndarray)):
                 state[mod_name] = mod
             else:
                 prefix = mod_name + "."
                 state = _state_dict(mod, state, prefix)
         return state
 
-    def eval(self):
-        """Switches the module to an evaluation mode.
-        """
-        if self._training:
-            self.training = False
+    def train(self, state: bool = True):
+        self._training = state
+        for mod in filter(
+            lambda x: isinstance(x, Module), self.nested_modules.values()
+        ):
+            mod.train(state=state)
 
-    def train(self):
-        """Switches the module to an training mode.
-        """
-        if not self._training:
-            self.training = True
+    def eval(self):
+        """Switches the module to evaluation mode."""
+        self.train(state=False)
 
     def reset_rng(self):
-        """Resets the random number of the module is not determinsitic.
-        """
+        """Resets the random number of the module is not determinsitic."""
         if len(self.nested_modules) > 0:
             for mod in filter(
                 lambda x: isinstance(x, Module) and x.non_deterministic,
@@ -231,16 +254,16 @@ class Module(abc.ABC):
             rng, subkey = jax.random.split(self.rng, 2)
 
             # To avoid leaks and changing the rng while tracing.
-            if not isinstance(rng, jax.core.Tracer):
+            if not _is_tracer(rng):
                 self._rng = rng
             return subkey
         else:
             return self.rng
 
     def _jit_compile_forward_fn(self):
-        """USes `jax.jit` to compile a given module, it will be called
-           automatically if `jit` is set to True while the instantiation
-           of the instance
+        """Uses `jax.jit` to compile a given module, it will be called 
+           automatically if `jit_compile=True`
+           while the instantiation of the instance.
         """
         if self.jit_compile and isinstance(self, Module):
             nested_mods = [
@@ -256,10 +279,10 @@ class Module(abc.ABC):
                     mod._jit_compile_forward_fn()
 
     def check_if_init_called(self):
-        """Check if __init__ is called before performing any operation.
+        """Check if `__init__` is called before performing any operation.
 
         Raises:
-            Exception: An exception is raised if __init__ is not called.
+            Exception: An exception is raised if `__init__` is not called.
         """
         if not hasattr(self, "nested_modules"):
             raise Exception(
@@ -267,8 +290,9 @@ class Module(abc.ABC):
                 "Please add it in your subclass `__init__`"
             )
 
-    def add_module(self, name: str, module):
+    def add_module(self, name: str, module: Module):
         """Tracks a module by adding it to `nested_modules` attribute.
+        
         Args:
             name (str): Name of the module.
             module (Module): Module to track.
@@ -277,27 +301,28 @@ class Module(abc.ABC):
         self.nested_modules[name] = module
         module._jit_compile_forward_fn()
 
-    def __setattr__(self, __name: str, __value: Any) -> None:
-        if isinstance(__value, Module):  # Modules are automatically tracked
-            self.add_module(__name, __value)
-        elif backend.tracking() and isinstance(__value, jax.numpy.ndarray):
+    def __setattr__(self, name: str, value: Any) -> None:
+        if isinstance(value, Module):  # Modules are automatically tracked
+            self.add_module(name, value)
+        elif backend.tracking() and isinstance(value, jax.numpy.ndarray):
             self.check_if_init_called()
-            self.nested_modules[__name] = __value
-        super(Module, self).__setattr__(__name, __value)
+            self.nested_modules[name] = value
+
+        super(Module, self).__setattr__(name, value)
 
     def pre_forward_hook(self, *args, **kwargs):
         return None
-
-    # TODO: save each gradient to its corresponding layer.
-    def save_gradients(self, gradients):
-        pass
 
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
     def predict(self, *args, **kwargs):
         """Changes the module state to
-           evaluation in order to make a prediction
+           evaluation in order to make a prediction.
+
+           >>> model = hera.nn.Linear(10, 10)
+           >>> x = jax.random.normal(jax.random.PRNGKey(3), (2, 10))
+           >>> model.predict(x) # No need to pass the model parameters.
 
         Returns:
             jax.numpy.ndarray: Prediction outputs.

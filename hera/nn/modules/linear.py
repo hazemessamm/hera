@@ -1,12 +1,12 @@
-from typing import Callable, Dict, Union, Optional
+from typing import Callable, Dict, Optional, Union
 
+import jax
 from jax.nn import initializers
-from jax.numpy import ndarray
 from jax.random import PRNGKey
 
+from hera import backend
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from hera import backend
 
 
 class Linear(Module):
@@ -20,13 +20,23 @@ class Linear(Module):
     ):
         """Linear Layer which applies linear transformation on the inputs.
 
+        >>> In case of initializing `global_rng`, the
+        >>> hera.set_global_rng(5)
+        >>> model = hera.nn.Linear(input_dim=10, output_dim=10)
+        >>> model(model.parameters(), x)
+        >>> # In case of not initializing `global_rng` (hera.set_global_rng)
+        >>> # rng parameter should have a value.
+        >>> model = nn.Linear(input_dim=10, output_dim=10, rng=10)
+        >>> model(model.parameters(), x)
+
+
         Args:
             input_dim (int): Size of the input dimension.
             output_dim (int): Size of the output dimension.
-            rng (int): Seed or a random number that will
-                       be used to create the weights.
-                       Default is None in case of creating a global rng,
-                       otherwise rng should be initialized.
+            rng (int, optional): Seed or a random number that will 
+                                 be used to create the weights.
+                                 Default is None in case of creating a global rng,
+                                 otherwise rng should be initialized.
             activation (Callable, optional): An activation function that will
                                              be called after the linear
                                              transformation. Defaults to None.
@@ -47,28 +57,17 @@ class Linear(Module):
             self.add_weight(bias_key, initializers.zeros, (self.output_dim,), 'bias')
 
 
-    # def build(self):
-    #     # Create 2 subkeys for the weights and bias
-    #     weight_key, bias_key = backend.create_keys(self.rng, 2)
-
-    #     self.add_weight(weight_key, initializers.glorot_uniform(), (self.input_dim, self.output_dim), 'weight')
-    #     if self.use_bias:
-    #         self.add_weight(bias_key, initializers.zeros, (self.output_dim,), 'bias')
-        
-    #     self.built = True
-
     def forward(
-        self, weights: Dict, inputs: ndarray
-    ) -> ndarray:
+        self, weights: Dict, inputs: jax.numpy.ndarray
+    ) -> jax.numpy.ndarray:
         """Applies linear transformation on the inputs.
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            inputs (ndarray): A tensor with axis order: (*, input_dim)
+            inputs (ndarray): A tensor with shape (*, input_dim)
 
         Returns:
-            ndarray: A linearly transformed input
-                     with axis order: (*, output_dim).
+            ndarray: A linearly transformed input with shape (*, output_dim).
         """
 
         if self.use_bias:

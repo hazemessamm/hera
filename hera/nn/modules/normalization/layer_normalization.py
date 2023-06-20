@@ -1,12 +1,11 @@
 from typing import Dict
 
+import jax
 from jax.nn import initializers
-from jax.numpy import ndarray
 
+from hera import backend
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from hera.nn.modules.parameter import Parameter
-from hera import backend
 
 
 class LayerNormalization(Module):
@@ -47,15 +46,15 @@ class LayerNormalization(Module):
         if self.center:
             self.add_weight(beta_key, initializers.zeros, (self.normalized_shape,), 'beta')
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: jax.numpy.ndarray) -> jax.numpy.ndarray:
         """Applies layer normalization over the feature dimension.
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            inputs (ndarray): Tensor with shape (*, normalized_shape)
+            inputs (jax.numpy.ndarray): Tensor with shape (*, normalized_shape)
 
         Returns:
-            ndarray: Tensor with shape (*, normalized_shape)
+            jax.numpy.ndarray: Tensor with shape (*, normalized_shape)
         """
         out = F.layer_normalization(
             inputs, weights["gamma"], weights["beta"], self.eps

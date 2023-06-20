@@ -1,13 +1,13 @@
-from typing import Callable, Dict, List, Tuple, Union, Optional
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
+import jax
 from jax import lax
 from jax.nn import initializers
-from jax.numpy import DeviceArray
 
-from hera.nn.modules import functional as F
-from hera.nn.modules.module import Module
 from hera import backend
+from hera.nn.modules import functional as F
 from hera.nn.modules.convolution import conv_validation
+from hera.nn.modules.module import Module
 
 
 class Conv2D(Module):
@@ -28,9 +28,9 @@ class Conv2D(Module):
             in_channels (int): Number of input channels.
             out_channels (int): Number of output channels.
             kernel_size (Union[int, tuple]): Number of filters.
-            rng (int): Seed for creating the weights and bias.
-                       Default is None in case of creating a global rng,
-                       otherwise rng should be initialized with an integer.
+            rng (int, optional): Seed for creating the weights and bias.
+                                 Default is None in case of creating a global rng,
+                                 otherwise rng should be initialized with an integer.
             strides (Union[int, tuple], optional): Number of strides.
                                                    Accepts integer or a tuple.
                                                    Defaults to (1, 1).
@@ -60,13 +60,6 @@ class Conv2D(Module):
         self.add_weight(k1, initializers.glorot_uniform(), (*self.kernel_size, self.in_channels, self.out_channels), 'weight')
         if self.use_bias:
             self.add_weight(k2, initializers.zeros, (self.out_channels,), 'bias')
-
-    # def build(self):
-    #     k1, k2 = backend.create_keys(self.rng, 2)
-    #     self.add_weight(k1, initializers.glorot_uniform(), (*self.kernel_size, self.in_channels, self.out_channels), 'weight')
-    #     if self.use_bias:
-    #         self.add_weight(k2, initializers.zeros, (self.out_channels,), 'bias')
-    #     self.built = True
     
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 4:
@@ -83,17 +76,15 @@ class Conv2D(Module):
             dimension_numbers=self._dimensions_spec,
         )
 
-    def forward(self, weights: Dict, inputs: DeviceArray):
+    def forward(self, weights: Dict, inputs: jax.numpy.ndarray) -> jax.numpy.ndarray:
         """Applies convolution operation on inputs.
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            inputs (ndarray): A 4D tensor containing inputs with axis order:
-                              (batch_size, height, width, in_channels).
+            inputs (jax.numpy.ndarray): A 4D tensor containing inputs with shape (batch_size, height, width, in_channels).
 
         Returns:
-            ndarray: A 3D tensor with axis order:
-                     (batch_size, height, width, out_channels)
+            jax.numpy.ndarray: A 3D tensor with shape (batch_size, height, width, out_channels)
         """
         if self.use_bias:
             bias = weights["bias"]

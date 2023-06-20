@@ -1,13 +1,13 @@
 from typing import Callable, Dict, List, Tuple, Union
 
+import jax
 from jax import lax
 from jax.nn import initializers
-from jax.numpy import ndarray
 
-from hera.nn.modules import functional as F
-from hera.nn.modules.module import Module
 from hera import backend
+from hera.nn.modules import functional as F
 from hera.nn.modules.convolution import conv_validation
+from hera.nn.modules.module import Module
 
 
 class Conv1D(Module):
@@ -64,19 +64,6 @@ class Conv1D(Module):
         else:
             self.bias = None
 
-    # def build(self):
-    #     k1, k2 = backend.create_keys(self.rng, 2)
-    #     kernel_shape = (*self.kernel_size, self.in_channels, self.out_channels)
-    #     self.add_weight(k1, initializers.xavier_uniform(), kernel_shape, 'weight')
-
-    #     if self.use_bias:
-    #         bias_shape = (self.out_channels,)
-    #         self.add_weight(k2, initializers.zeros, bias_shape, 'bias')
-    #     else:
-    #         self.bias = None
-        
-    #     self.built = True
-
     def compute_output_shape(self, input_shape: Union[List, Tuple]):
         if len(input_shape) != 3:
             raise ValueError(
@@ -93,17 +80,16 @@ class Conv1D(Module):
             dimension_numbers=self._dimensions_spec,
         )
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: jax.numpy.ndarray) -> jax.numpy.ndarray:
         """Applies convolution operation on inputs.
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            inputs (ndarray): A 3D tensor containing inputs with axis order:
-                              (batch_size, timesteps, in_channels).
+            inputs (jax.numpy.ndarray): A 3D tensor containing inputs with axis order:
+                                        (batch_size, timesteps, in_channels).
 
         Returns:
-            ndarray: A 3D tensor with axis order:
-                     (batch_size, timesteps, out_channels)
+            jax.numpy.ndarray: A 3D tensor with axis order (batch_size, timesteps, out_channels)
         """
 
         if self.bias is None:

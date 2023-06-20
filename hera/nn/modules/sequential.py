@@ -1,14 +1,14 @@
 from typing import Dict, List
 
-from jax.numpy import ndarray
+import jax
 from hera.nn.modules import Module
 from collections import OrderedDict
 
 
 class Sequential(Module):
     def __init__(self, modules: List = None, jit_compile: bool = False):
-        super().__init__(jit_compile=jit_compile)
-        for idx, module in enumerate(modules):
+        super().__init__(jit_compile=jit_compile, requires_rng=False)
+        for idx, module in enumerate(modules, start=0):
             self.add_module(str(idx), module)
     
     def __getitem__(self, idx):
@@ -18,7 +18,7 @@ class Sequential(Module):
         for k, v in new_weights.items():
             self.nested_modules[k].update_parameters(v)
 
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: jax.numpy.ndarray):
         out = inputs
         for weight, mod in zip(weights.values(), self.nested_modules.values()):
             out = mod(weight, out)

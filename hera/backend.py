@@ -33,13 +33,11 @@ class _RNGState:
         return cls.instance
     
     def add_global_rng(self, name, rng):
-        if name not in self.rngs:
-            self.rngs[name] = rng
-        else:
-            raise ValueError(f"Global rng with name {name} already exists.")
+        self.rngs[name] = rng
     
-    def update_global_rng(self, name):
-        self.rngs[name], _ = jax.random.split(self.rngs[name])
+    def get_and_update_global_rng(self, name):
+        self.rngs[name], subkey = jax.random.split(self.rngs[name])
+        return subkey
 
 
 def global_rng():
@@ -56,8 +54,7 @@ def set_global_rng(rng):
 
 def get_and_update_global_rng():
     isinstance = _RNGState()
-    rng = isinstance.rngs['global_rng']
-    isinstance.update_global_rng('global_rng')
+    rng = isinstance.get_and_update_global_rng('global_rng')
     return rng
 
 

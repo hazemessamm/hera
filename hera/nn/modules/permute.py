@@ -5,23 +5,22 @@ from hera.nn.modules.module import Module
 
 
 class Permute(Module):
-    def __init__(self, permute_to: Tuple):
+    def __init__(self, target_shape: Tuple):
         """Permute Module.
 
         Args:
-            permute_to (Tuple): Tuple with the target axis order.
+            target_shape (Tuple): Tuple with the target axis order.
         """
-        super().__init__()
-        self.permute_to = permute_to
+        super().__init__(requires_rng=False)
+        self.target_shape = target_shape
 
-    def forward(self, inputs):
+    def forward(self, inputs: jax.numpy.ndarray) -> jax.numpy.ndarray:
         """Permutes the inputs.
 
         Args:
-            inputs (ndarray): len(permute_to)-D Tensor with
-                              order axis (batch_size, *)
+            inputs (jax.numpy.ndarray): len(target_shape)-D Tensor.
 
         Returns:
-            ndarray: len(permute_to)-D Tensor
-        """
-        return F.permute(inputs, self.permute_to)
+            jax.numpy.ndarray: len(target_shape)-D Tensor.
+        """w
+        return F.permute(inputs, self.target_shape)

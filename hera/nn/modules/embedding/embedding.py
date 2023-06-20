@@ -1,11 +1,11 @@
-from typing import Dict
+from typing import Dict, Optional
 
+import jax
 from jax.nn import initializers
-from jax.numpy import ndarray
 
+from hera import backend
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from hera import backend
 
 
 class Embedding(Module):
@@ -13,7 +13,7 @@ class Embedding(Module):
         self,
         embedding_size: int,
         embedding_dim: int,
-        rng: int,
+        rng: Optional[int] = None,
         padding_idx: int = None,
     ):
         """Embedding Module.
@@ -22,7 +22,7 @@ class Embedding(Module):
             embedding_size (int): Size of the embedding table.
             embedding_dim (int): Dimension size of each entry
                                  in the embedding table
-            rng (int): Seed for creating the embedding initial weights.
+            rng (int, optional): Seed for creating the embedding initial weights.
             padding_idx (int, optional): Zereos out the `padding_idx`
                                          if it is not `None`. Defaults to None.
         """
@@ -32,23 +32,17 @@ class Embedding(Module):
         self.padding_idx = padding_idx
         
         key = backend.create_keys(self.rng, 1)
-        self.add_weight(key, initializers.uniform(), (self.embedding_size, self.embedding_dim), 'weight')
+        self.add_weight(key, initializers.uniform(), (embedding_size, embedding_dim), 'weight')
 
-
-    # def build(self):
-    #     key = backend.create_keys(self.rng, 1)
-    #     self.add_weight(key, initializers.uniform(), (self.embedding_size, self.embedding_dim), 'weight')
-    #     self.built = True
-
-    def forward(self, weights: Dict, inputs: ndarray):
+    def forward(self, weights: Dict, inputs: jax.numpy.ndarray) -> jax.numpy.ndarray:
         """Returns the embedding of each index in the inputs.
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            inputs (ndarray): A n-D tensor of indices.
+            inputs (jax.numpy.ndarray): A n-D tensor of indices.
 
         Returns:
-            ndarray: A n+1-D tensor with order axis: (*, embed_dim).
+            jax.numpy.ndarray: A n+1-D tensor with shape (*, embed_dim).
         """
         out = F.embedding(inputs, weights["weight"])
         return out

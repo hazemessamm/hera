@@ -1,8 +1,9 @@
-from jax.numpy import ndarray
+import jax
+from jax import lax
 
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
-from jax import lax
+
 
 class AvgPooling2D(Module):
     def __init__(self, pool_size, strides=None, padding="valid"):
@@ -12,15 +13,14 @@ class AvgPooling2D(Module):
         self.strides = strides
         self.padding = padding
 
-    def forward(self, inputs: ndarray):
+    def forward(self, inputs: jax.numpy.ndarray) -> jax.numpy.ndarray:
         """Applies average pooling for spatial data.
 
         Args:
-            inputs (ndarray): A 4D tensor with
-                              axis order: (batch_size, height, width, channels)
+            inputs (jax.numpy.ndarray): A 4D tensor with shape (batch_size, height, width, channels)
 
         Returns:
-            ndarray: A 4D tensor with axis order: (batch_size, height, width, channels)
+            jax.numpy.ndarray: A 4D tensor with shape (batch_size, height, width, channels)
         """
         if isinstance(self.padding, tuple):
             padding = self.padding

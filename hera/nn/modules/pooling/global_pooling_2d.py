@@ -4,7 +4,7 @@ from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 
 
-class GlobalMaxPooling1D(Module):
+class GlobalMaxPooling2D(Module):
     def __init__(self):
         """Global Max Pooling Module."""
         super().__init__(requires_rng=False)
@@ -18,10 +18,10 @@ class GlobalMaxPooling1D(Module):
         Returns:
             jax.numpy.ndarray: A 2D tensor with shape (batch_size, features)
         """
-        return F.global_max_pooling_1d(inputs)
+        return F.global_max_pooling_2d(inputs)
 
 
-class GlobalAvgPooling1D(Module):
+class GlobalAvgPooling2D(Module):
     def __init__(self):
         """Global Average Pooling Module."""
         super().__init__(requires_rng=False)
@@ -37,4 +37,4 @@ class GlobalAvgPooling1D(Module):
         Returns:
             jax.numpy.ndarray: A 2D tensor with shape (batch_size, features)
         """
-        return F.global_avg_pooling_1d(inputs)
+        return F.global_avg_pooling_2d(inputs)

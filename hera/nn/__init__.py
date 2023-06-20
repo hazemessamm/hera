@@ -17,6 +17,8 @@ from .modules import TransformerEncoderLayer
 from .modules import GlobalAvgPooling1D
 from .modules import GlobalMaxPooling1D
 from .modules import AvgPooling2D
+from .modules import GlobalAvgPooling2D
+from .modules import GlobalMaxPooling2D
 from jax.nn import (
     hard_tanh,
     celu,

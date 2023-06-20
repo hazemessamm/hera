@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import jax
 from hera.nn.modules import functional as F
 from hera.nn.modules.module import Module
 
@@ -22,5 +23,5 @@ class Permute(Module):
 
         Returns:
             jax.numpy.ndarray: len(target_shape)-D Tensor.
-        """w
+        """
         return F.permute(inputs, self.target_shape)

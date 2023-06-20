@@ -438,6 +438,7 @@ def multihead_attention(query: jax.numpy.ndarray,
                         use_causal_mask: bool,
                         training: bool) -> jax.numpy.ndarray:
     
+    embed_dim = query.shape[-1]
     embed_dim_per_head = query.shape[-1] // num_heads
     query = linear(query, query_weights)
     key = linear(key, key_weights)
@@ -447,7 +448,7 @@ def multihead_attention(query: jax.numpy.ndarray,
     )
     scores = attention(query, key, use_causal_mask)
     scores = dropout(scores, dropout_prob, dropout_rng, training)
-    scores = score_value_matmul_and_transpose_scores(scores, value, self.embed_dim)
+    scores = score_value_matmul_and_transpose_scores(scores, value, embed_dim)
     out = linear(scores, output_weights)
     return out
 

@@ -35,13 +35,13 @@ class MultiHeadAttention(Module):
                                   Defaults to False.
 
         Raises:
-            ValueError: If the embedding dimension is not divisble by
+            ValueError: If the embedding dimension is not divisible by
                         the number of heads.
         """
         super().__init__(rng=rng, jit=jit)
 
         if embed_dim % num_heads != 0:
-            raise ValueError("embed_dim should be divisble by num_heads")
+            raise ValueError("embed_dim should be divisible by num_heads")
 
         self.num_heads = num_heads
         self.embed_dim = embed_dim

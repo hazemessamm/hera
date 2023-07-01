@@ -15,6 +15,7 @@ def _is_tracer(instance):
     return isinstance(instance, jax.core.Tracer)
 
 
+
 class Module(abc.ABC):
     def __init__(
         self,
@@ -34,6 +35,7 @@ class Module(abc.ABC):
         self._specify_rng_value()
 
         self.nested_modules = OrderedDict()
+        self.rngs = OrderedDict()
         self._name = None
 
         self.trainable = True
@@ -57,7 +59,7 @@ class Module(abc.ABC):
                 "`rng` must be either a random number or you "
                 "should set a global rng using "
                 "`self.set_global_key()` function. "
-                f"Recieved: {self._rng}"
+                f"Received: {self._rng}"
             )
 
         if self._requires_rng and self._rng is not None:
@@ -86,20 +88,20 @@ class Module(abc.ABC):
     def add_weight(
         self,
         rng: jax.random.PRNGKey,
-        initialzer: callable,
+        initializer: callable,
         shape: Tuple,
         name: str,
     ):
         """Creates and adds a tensor and tracks it in a given module
 
         Args:
-            rng (jax.random.PRNGKey): random number for initialzing the weight.
-            initialzer (callable): Initialization function
+            rng (jax.random.PRNGKey): random number for initializing the weight.
+            initializer (callable): Initialization function
             shape (Tuple): Tuple that represents the shape of the weight
             name (str): The name of the tensor to be initialized.
         """
         with backend.track_tensor():
-            tensor = initialzer(rng, shape)
+            tensor = initializer(rng, shape)
             setattr(self, name, tensor)
 
     def update_parameters(self, new_weights: OrderedDict):
@@ -213,7 +215,7 @@ class Module(abc.ABC):
         self.train(state=False)
 
     def reset_rng(self):
-        """Resets the random number of the module is not determinsitic."""
+        """Resets the random number of the module is not deterministic."""
         if len(self.nested_modules) > 0:
             for mod in filter(
                 lambda x: isinstance(x, Module) and x.non_deterministic,
@@ -292,7 +294,7 @@ class Module(abc.ABC):
 
     def add_module(self, name: str, module: Module):
         """Tracks a module by adding it to `nested_modules` attribute.
-        
+
         Args:
             name (str): Name of the module.
             module (Module): Module to track.

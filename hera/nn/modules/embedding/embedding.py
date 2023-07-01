@@ -23,7 +23,7 @@ class Embedding(Module):
             embedding_dim (int): Dimension size of each entry
                                  in the embedding table
             rng (int, optional): Seed for creating the embedding initial weights.
-            padding_idx (int, optional): Zereos out the `padding_idx`
+            padding_idx (int, optional): Zeros out the `padding_idx`
                                          if it is not `None`. Defaults to None.
         """
         super().__init__(rng)

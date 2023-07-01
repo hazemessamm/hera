@@ -25,7 +25,7 @@ class Adam(Optimizer):
         self.update_optimizer_state(self.init_fn(params))
 
     def step(self, gradients):
-        if not self.initalized:
+        if not self.initialized:
             self.initialize(self.module.parameters())
 
         updates, opt_state = self.update_fn(gradients, self.optimizer_state)

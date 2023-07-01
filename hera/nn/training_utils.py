@@ -101,7 +101,7 @@ class BackwardRecorder:
         else:
             raise ValueError(
                 "Expected optimizer with type `Optimizer`. "
-                f"Recieved {self.optimizer}. Pass the optimizer in the __init__"
+                f"Received {self.optimizer}. Pass the optimizer in the __init__"
                 " (e.g. __init__(model=model, loss=loss, optimizer=optimizer))"
             )
 

@@ -49,7 +49,7 @@ class Linear(Module):
         self.input_dim = input_dim
         self.use_bias = use_bias
 
-        # Create 2 subkeys for the weights and bias
+        # Create 2 keys for the weights and bias
         weight_key, bias_key = backend.create_keys(self.rng, 2)
 
         self.add_weight(weight_key, initializers.glorot_uniform(), (self.input_dim, self.output_dim), 'weight')

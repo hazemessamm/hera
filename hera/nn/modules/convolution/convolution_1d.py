@@ -69,7 +69,7 @@ class Conv1D(Module):
             raise ValueError(
                 "`input_shape` should be a tuple "
                 "with len(input_shape) == 4. "
-                f"Recieved {input_shape}"
+                f"Received {input_shape}"
             )
 
         return lax.conv_general_shape_tuple(
@@ -85,11 +85,10 @@ class Conv1D(Module):
 
         Args:
             weights: (Dict): Dictionary with attribute names as keys and weights as values.
-            inputs (jax.numpy.ndarray): A 3D tensor containing inputs with axis order:
-                                        (batch_size, timesteps, in_channels).
+            inputs (jax.numpy.ndarray): A 3D tensor containing inputs with shape (batch_size, timesteps, in_channels).
 
         Returns:
-            jax.numpy.ndarray: A 3D tensor with axis order (batch_size, timesteps, out_channels)
+            jax.numpy.ndarray: A 3D tensor with shape (batch_size, timesteps, out_channels)
         """
 
         if self.bias is None:

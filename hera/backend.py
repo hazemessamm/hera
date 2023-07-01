@@ -128,18 +128,18 @@ def create_keys(rng, num_keys):
     return jax.random.split(rng, num_keys)
 
 
-def save_weights(module, prefix, extention='.h5'):
-        if not prefix.endswith(extention):
-            prefix += extention
+def save_weights(module, prefix, extension='.h5'):
+        if not prefix.endswith(extension):
+            prefix += extension
 
         with h5py.File(prefix, 'w') as f:
             f.update(module.state_dict())
 
 
-def load_weights(prefix, extention='.h5'):
+def load_weights(prefix, extension='.h5'):
     weights = OrderedDict()
-    if not prefix.endswith(extention):
-        prefix += extention
+    if not prefix.endswith(extension):
+        prefix += extension
 
     with h5py.File(prefix, 'r') as f:
         for k, v in f.items():

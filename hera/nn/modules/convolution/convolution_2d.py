@@ -65,7 +65,7 @@ class Conv2D(Module):
         if len(input_shape) != 4:
             raise ValueError(
                 f"`input_shape` should be a tuple with len(input_shape) == 4."
-                f"Recieved {input_shape}"
+                f"Received {input_shape}"
             )
 
         return lax.conv_general_shape_tuple(
